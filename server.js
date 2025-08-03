@@ -24,7 +24,7 @@ try {
     console.log('config.env 파일을 읽을 수 없습니다. 기본값을 사용합니다.');
 }
 
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 // CORS 헤더 설정
 const corsHeaders = {
@@ -317,14 +317,14 @@ function handleDartProxy(req, res) {
 
 server.listen(PORT, () => {
     console.log(`🚀 Express 프록시 서버가 포트 ${PORT}에서 실행 중입니다.`);
-    console.log(`📱 브라우저에서 http://localhost:${PORT} 접속`);
-    console.log(`🔧 API 프록시: http://localhost:${PORT}/api/`);
-    console.log(`📊 서버 상태: http://localhost:${PORT}/status`);
+    console.log(`📱 서버가 포트 ${PORT}에서 실행 중입니다`);
+    console.log(`🔧 API 프록시: /api/`);
+    console.log(`📊 서버 상태: /status`);
     console.log(`🤖 Gemini API 키: ${GEMINI_API_KEY.substring(0, 10)}...`);
 });
 
 console.log('💡 사용법:');
-console.log('1. 브라우저에서 http://localhost:3001 접속');
+console.log(`1. 브라우저에서 서버에 접속하세요`);
 console.log('2. API 호출 예시:');
 console.log('   - 범용 API: /api/list.json?crtfc_key=YOUR_KEY&bgn_de=20240101&end_de=20240101');
 console.log('   - Dart 프록시: /dart-proxy?crtfc_key=YOUR_KEY&bgn_de=20240101&end_de=20240101');
