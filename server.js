@@ -46,7 +46,7 @@ const server = http.createServer((req, res) => {
 
     // 정적 파일 서빙
     if (req.url === '/' || req.url === '/index.html') {
-        serveFile(res, 'index.html');
+        serveFile(res, 'financial-visualization.html');
         return;
     }
 
