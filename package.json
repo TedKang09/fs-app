@@ -1,17 +1,13 @@
 {
-  "name": "financial-visualization",
+  "name": "fs-app",
   "version": "1.0.0",
-  "description": "Financial statement visualization with Gemini AI analysis",
+  "description": "Financial Statement Analysis App",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node server.js"
   },
   "dependencies": {
-    "dotenv": "^16.3.1",
-    "@google/generative-ai": "^0.2.1"
+    "node-fetch": "^3.3.2"
   },
-  "keywords": ["financial", "visualization", "ai", "gemini"],
-  "author": "",
-  "license": "MIT"
-} 
+  "type": "module"
+}

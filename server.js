@@ -1,17 +1,18 @@
-const http = require('http');
-const https = require('https');
-const url = require('url');
-const fs = require('fs');
-const path = require('path');
-const querystring = require('querystring');
+import http from 'http';
+import https from 'https';
+import { URL, fileURLToPath } from 'url';
+import fs from 'fs';
+import path from 'path';
+import { dirname } from 'path';
+import fetch from 'node-fetch';
 
-// Node.js에서 fetch 사용을 위한 설정
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // 환경변수 로드 (간단한 방식)
 let GEMINI_API_KEY = 'your_api_key_here';
 try {
-    const fs = require('fs');
+    // fs는 이미 import되어 있음
     const configPath = './config.env';
     if (fs.existsSync(configPath)) {
         const configContent = fs.readFileSync(configPath, 'utf8');
@@ -277,7 +278,7 @@ function handleApiProxy(req, res) {
 
 // Dart 프록시 처리
 function handleDartProxy(req, res) {
-    const parsedUrl = url.parse(req.url, true);
+    const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
     const query = parsedUrl.query;
     
     const targetUrl = `https://opendart.fss.or.kr/api/list.json?${new URLSearchParams(query).toString()}`;
