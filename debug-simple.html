@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>간단한 디버그</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .result {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <h1>🔍 간단한 디버그</h1>
+    
+    <button onclick="testServer()">🔧 서버 연결 테스트</button>
+    <button onclick="testApi()">🧪 API 테스트</button>
+    <button onclick="testDirect()">🌐 직접 API 테스트</button>
+    
+    <div id="result" class="result">결과가 여기에 표시됩니다...</div>
+
+    <script>
+        const API_KEY = '447fcb4de167afbabb21ed7ded674931a89ad0b3';
+        
+        async function testServer() {
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.className = 'result info';
+            resultDiv.textContent = '🔧 서버 연결 테스트 중...';
+            
+            try {
+                const response = await fetch('http://localhost:3001/status');
+                const data = await response.json();
+                
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `
+✅ 서버 연결 성공!
+
+📋 서버 정보:
+- 상태: ${data.status}
+- 포트: ${data.port}
+- 시간: ${data.timestamp}
+
+🔧 엔드포인트:
+${data.endpoints.join('\n')}
+                `;
+                
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `
+❌ 서버 연결 실패!
+
+오류: ${error.message}
+
+💡 확인사항:
+1. 서버가 실행 중인지 확인
+2. 포트 3001이 사용 가능한지 확인
+3. 브라우저 콘솔에서 오류 확인
+                `;
+            }
+        }
+        
+        async function testApi() {
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.className = 'result info';
+            resultDiv.textContent = '🧪 API 테스트 중...';
+            
+            try {
+                const url = `http://localhost:3001/api/list.json?crtfc_key=${API_KEY}&bgn_de=20240101&end_de=20240101&page_no=1&page_count=3`;
+                
+                resultDiv.textContent += `\n📡 요청 URL: ${url}`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `
+✅ API 호출 성공!
+
+📊 응답 정보:
+- 상태: ${data.status}
+- 총 건수: ${data.total_count || 0}
+- 데이터 개수: ${data.list ? data.list.length : 0}
+
+📋 첫 번째 데이터:
+${data.list && data.list.length > 0 ? JSON.stringify(data.list[0], null, 2) : '데이터가 없습니다.'}
+                `;
+                
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `
+❌ API 호출 실패!
+
+오류: ${error.message}
+
+💡 가능한 원인:
+1. 서버가 실행되지 않음
+2. CORS 문제
+3. 네트워크 문제
+4. API 키 문제
+                `;
+            }
+        }
+        
+        async function testDirect() {
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.className = 'result info';
+            resultDiv.textContent = '🌐 직접 API 테스트 중...';
+            
+            try {
+                const url = `https://opendart.fss.or.kr/api/list.json?crtfc_key=${API_KEY}&bgn_de=20240101&end_de=20240101&page_no=1&page_count=3`;
+                
+                resultDiv.textContent += `\n📡 직접 URL: ${url}`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.status === '000') {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `
+✅ 직접 API 호출 성공!
+
+📊 응답 정보:
+- 상태: ${data.status}
+- 총 건수: ${data.total_count || 0}
+- 데이터 개수: ${data.list ? data.list.length : 0}
+
+💡 API 키는 정상입니다!
+                `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `
+❌ API 오류: ${data.status}
+메시지: ${data.message || '알 수 없는 오류'}
+
+💡 API 키에 문제가 있을 수 있습니다.
+                `;
+                }
+                
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `
+❌ 직접 API 호출 실패!
+
+오류: ${error.message}
+
+💡 이는 CORS 문제입니다. 프록시 서버를 사용해야 합니다.
+                `;
+            }
+        }
+        
+        // 페이지 로드 시 자동 테스트
+        window.addEventListener('load', () => {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = 'result info';
+            resultDiv.textContent = `
+🔄 페이지 로드 완료!
+
+📋 설정된 API 키:
+- 키 길이: ${API_KEY.length}자리
+- 키 (처음 10자리): ${API_KEY.substring(0, 10)}...
+
+💡 테스트 순서:
+1. "🔧 서버 연결 테스트" - 서버 상태 확인
+2. "🧪 API 테스트" - 프록시를 통한 API 호출
+3. "🌐 직접 API 테스트" - CORS 문제 확인
+
+⚠️ 참고: 서버가 실행 중이어야 합니다.
+            `;
+        });
+    </script>
+</body>
+</html> 

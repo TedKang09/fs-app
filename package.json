@@ -1,0 +1,17 @@
+{
+  "name": "financial-visualization",
+  "version": "1.0.0",
+  "description": "Financial statement visualization with Gemini AI analysis",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "@google/generative-ai": "^0.2.1"
+  },
+  "keywords": ["financial", "visualization", "ai", "gemini"],
+  "author": "",
+  "license": "MIT"
+} 

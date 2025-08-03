@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Express 프록시 테스트</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .result {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .warning { background: #fff3cd; color: #856404; }
+        .form-group {
+            margin: 15px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Express 프록시 테스트</h1>
+        
+        <div class="warning">
+            <strong>⚠️ 중요:</strong> 이 페이지는 Express 프록시 서버에서 실행해야 합니다.
+            <br>Express 서버: <code>node express-proxy.js</code>
+            <br>브라우저에서: <code>http://localhost:3001/express-test.html</code>
+        </div>
+        
+        <div class="form-group">
+            <label>API 키:</label>
+            <input type="text" id="apiKey" value="447fcb4de167afbabb21ed7ded674931a89ad0b3" placeholder="OpenDart API 키를 입력하세요">
+        </div>
+        
+        <button onclick="testServerStatus()">📊 서버 상태 확인</button>
+        <button onclick="testDartProxy()">📋 공시정보 API</button>
+        <button onclick="testFinancialProxy()">💰 재무정보 API</button>
+        <button onclick="testCompanyProxy()">🏢 회사정보 API</button>
+        <button onclick="testUniversalProxy()">🌐 범용 API</button>
+        
+        <div id="result" class="result info">결과가 여기에 표시됩니다...</div>
+    </div>
+
+    <script>
+        async function testServerStatus() {
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.className = 'result info';
+            resultDiv.textContent = '📊 서버 상태 확인 중...';
+            
+            try {
+                const response = await fetch('http://localhost:3001/status');
+                const data = await response.json();
+                
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `
+✅ Express 프록시 서버가 정상 작동 중입니다!
+
+📋 서버 정보:
+- 상태: ${data.status}
+- 포트: ${data.port}
+- 시간: ${data.timestamp}
+
+🔧 사용 가능한 엔드포인트:
+${data.endpoints.map(endpoint => `- ${endpoint}`).join('\n')}
+
+💡 이제 API 테스트를 시도해보세요!
+                `;
+                
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `
+❌ Express 프록시 서버에 연결할 수 없습니다!
+
+오류: ${error.message}
+
+💡 해결 방법:
+1. Express 서버 시작: node express-proxy.js
+2. 포트 3001이 사용 가능한지 확인
+3. Node.js와 Express가 설치되어 있는지 확인
+                `;
+            }
+        }
+        
+        async function testDartProxy() {
+            const resultDiv = document.getElementById('result');
+            const apiKey = document.getElementById('apiKey').value;
+            
+            if (!apiKey) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '❌ API 키를 입력하세요.';
+                return;
+            }
+            
+            resultDiv.className = 'result info';
+            resultDiv.textContent = '📋 공시정보 API 호출 중...';
+            
+            try {
+                const url = `http://localhost:3001/dart-proxy?crtfc_key=${apiKey}&bgn_de=20240101&end_de=20240101&page_no=1&page_count=5`;
+                
+                resultDiv.textContent += `\n📡 요청 URL: ${url}`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.status === '000') {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `
+✅ 공시정보 API 호출 성공!
+
+📊 응답 정보:
+- 상태: ${data.status}
+- 총 건수: ${data.total_count || 0}
+- 데이터 개수: ${data.list ? data.list.length : 0}
+
+📋 첫 번째 데이터:
+${data.list && data.list.length > 0 ? JSON.stringify(data.list[0], null, 2) : '데이터가 없습니다.'}
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `
+❌ API 오류: ${data.status}
+메시지: ${data.message || '알 수 없는 오류'}
+                    `;
+                }
+                
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `
+❌ 공시정보 API 호출 실패!
+
+오류: ${error.message}
+                `;
+            }
+        }
+        
+        async function testFinancialProxy() {
+            const resultDiv = document.getElementById('result');
+            const apiKey = document.getElementById('apiKey').value;
+            
+            if (!apiKey) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '❌ API 키를 입력하세요.';
+                return;
+            }
+            
+            resultDiv.className = 'result info';
+            resultDiv.textContent = '💰 재무정보 API 호출 중...';
+            
+            try {
+                const url = `http://localhost:3001/financial-proxy?crtfc_key=${apiKey}&corp_code=00126380&bsns_year=2023&reprt_code=11011`;
+                
+                resultDiv.textContent += `\n📡 요청 URL: ${url}`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.status === '000') {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `
+✅ 재무정보 API 호출 성공!
+
+📊 응답 정보:
+- 상태: ${data.status}
+- 데이터 개수: ${data.list ? data.list.length : 0}
+
+📋 첫 번째 데이터:
+${data.list && data.list.length > 0 ? JSON.stringify(data.list[0], null, 2) : '데이터가 없습니다.'}
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `
+❌ API 오류: ${data.status}
+메시지: ${data.message || '알 수 없는 오류'}
+                    `;
+                }
+                
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `
+❌ 재무정보 API 호출 실패!
+
+오류: ${error.message}
+                `;
+            }
+        }
+        
+        async function testCompanyProxy() {
+            const resultDiv = document.getElementById('result');
+            const apiKey = document.getElementById('apiKey').value;
+            
+            if (!apiKey) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '❌ API 키를 입력하세요.';
+                return;
+            }
+            
+            resultDiv.className = 'result info';
+            resultDiv.textContent = '🏢 회사정보 API 호출 중...';
+            
+            try {
+                const url = `http://localhost:3001/company-proxy?crtfc_key=${apiKey}&corp_code=00126380`;
+                
+                resultDiv.textContent += `\n📡 요청 URL: ${url}`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.status === '000') {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `
+✅ 회사정보 API 호출 성공!
+
+📊 응답 정보:
+- 상태: ${data.status}
+- 데이터 개수: ${data.list ? data.list.length : 0}
+
+📋 첫 번째 데이터:
+${data.list && data.list.length > 0 ? JSON.stringify(data.list[0], null, 2) : '데이터가 없습니다.'}
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `
+❌ API 오류: ${data.status}
+메시지: ${data.message || '알 수 없는 오류'}
+                    `;
+                }
+                
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `
+❌ 회사정보 API 호출 실패!
+
+오류: ${error.message}
+                `;
+            }
+        }
+        
+        async function testUniversalProxy() {
+            const resultDiv = document.getElementById('result');
+            const apiKey = document.getElementById('apiKey').value;
+            
+            if (!apiKey) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '❌ API 키를 입력하세요.';
+                return;
+            }
+            
+            resultDiv.className = 'result info';
+            resultDiv.textContent = '🌐 범용 API 호출 중...';
+            
+            try {
+                const url = `http://localhost:3001/api/list.json?crtfc_key=${apiKey}&bgn_de=20240101&end_de=20240101&page_no=1&page_count=3`;
+                
+                resultDiv.textContent += `\n📡 요청 URL: ${url}`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.status === '000') {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `
+✅ 범용 API 호출 성공!
+
+📊 응답 정보:
+- 상태: ${data.status}
+- 총 건수: ${data.total_count || 0}
+- 데이터 개수: ${data.list ? data.list.length : 0}
+
+📋 첫 번째 데이터:
+${data.list && data.list.length > 0 ? JSON.stringify(data.list[0], null, 2) : '데이터가 없습니다.'}
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `
+❌ API 오류: ${data.status}
+메시지: ${data.message || '알 수 없는 오류'}
+                    `;
+                }
+                
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `
+❌ 범용 API 호출 실패!
+
+오류: ${error.message}
+                `;
+            }
+        }
+        
+        // 페이지 로드 시 상태 확인
+        window.addEventListener('load', () => {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = 'result info';
+            resultDiv.textContent = `
+🔄 Express 프록시 테스트 페이지 로드 완료!
+
+📋 설정된 API 키:
+- 키 길이: ${document.getElementById('apiKey').value.length}자리
+- 키 (처음 10자리): ${document.getElementById('apiKey').value.substring(0, 10)}...
+
+💡 테스트 방법:
+1. "📊 서버 상태 확인" - Express 서버 상태 확인
+2. "📋 공시정보 API" - 공시정보 API 테스트
+3. "💰 재무정보 API" - 재무정보 API 테스트
+4. "🏢 회사정보 API" - 회사정보 API 테스트
+5. "🌐 범용 API" - 범용 API 프록시 테스트
+
+⚠️ 참고: Express 서버가 실행 중이어야 합니다.
+            `;
+        });
+    </script>
+</body>
+</html> 

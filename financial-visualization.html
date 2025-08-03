@@ -1,0 +1,1664 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>재무제표 시각화</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding: 25px;
+            border-radius: 10px;
+            background: #f8f9fa;
+            border-left: 5px solid #667eea;
+        }
+
+        .section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            background: white;
+            border: 1px solid #ddd;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .error {
+            background: #ffe6e6;
+            border-color: #ff9999;
+            color: #cc0000;
+        }
+
+        .success {
+            background: #e6ffe6;
+            border-color: #99ff99;
+            color: #006600;
+        }
+
+        .company-info {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .company-name {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .company-details {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            height: 300px; /* Added for fixed height */
+        }
+
+        .chart-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .financial-metrics {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 30px;
+            justify-content: flex-start;
+            align-items: stretch;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            width: calc(16.666% - 12.5px);
+            min-width: 150px;
+            flex: 0 0 auto;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 1200px) {
+            .metric-card {
+                width: calc(20% - 12px);
+                min-width: 140px;
+            }
+        }
+
+        @media (max-width: 1000px) {
+            .metric-card {
+                width: calc(25% - 11.25px);
+                min-width: 130px;
+            }
+        }
+
+        @media (max-width: 800px) {
+            .metric-card {
+                width: calc(33.333% - 10px);
+                min-width: 120px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .metric-card {
+                width: calc(50% - 7.5px);
+                min-width: 110px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .metric-card {
+                width: 100%;
+                min-width: auto;
+            }
+        }
+
+        .metric-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .positive {
+            color: #28a745;
+        }
+
+        .negative {
+            color: #dc3545;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            flex: 1;
+        }
+
+        .suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .suggestion-item {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+
+        .suggestion-item:hover {
+            background: #f8f9fa;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .chart-container canvas {
+            max-height: 250px !important;
+            height: 250px !important;
+        }
+
+        .financial-table-container {
+            overflow-x: auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .financial-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+            color: #333;
+            table-layout: fixed;
+        }
+
+        .financial-table th, .financial-table td {
+            padding: 12px 15px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+            word-wrap: break-word;
+        }
+
+        .financial-table th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .financial-table th:nth-child(1) {
+            width: 40%;
+        }
+
+        .financial-table th:nth-child(2) {
+            width: 30%;
+        }
+
+        .financial-table th:nth-child(3) {
+            width: 30%;
+        }
+
+        .financial-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .financial-table tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .section-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 재무제표 시각화</h1>
+            <p>기업의 재무제표를 시각화하여 분석합니다</p>
+        </div>
+
+        <div class="content">
+            <!-- 기업 검색 섹션 -->
+            <div class="section">
+                <h2>🏢 기업 검색</h2>
+                <div class="search-container" style="position: relative;">
+                    <input type="text" id="companySearch" class="search-input" placeholder="기업명을 입력하세요 (예: 삼성전자, SK하이닉스)" autocomplete="off">
+                    <button class="btn" onclick="searchCompany()">🔍 검색</button>
+                    <button class="btn" onclick="loadCompanyCodes()">📥 회사코드 로드</button>
+                    <div id="suggestions" class="suggestions"></div>
+                </div>
+                
+                <div id="searchResult" class="result" style="display: none;"></div>
+            </div>
+
+            <!-- 선택된 기업 정보 -->
+            <div id="selectedCompany" class="company-info" style="display: none;">
+                <div class="company-name" id="selectedCompanyName"></div>
+                <div class="company-details" id="selectedCompanyDetails"></div>
+                <input type="text" id="corpCode" placeholder="기업코드를 입력하세요" style="margin-bottom: 10px;">
+                
+                <!-- 연도 및 분기 선택 -->
+                <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center;">
+                    <label for="yearSelect" style="font-weight: bold; color: #333;">연도:</label>
+                    <select id="yearSelect" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; background: white;">
+                        <option value="2025">2025년</option>
+                        <option value="2024" selected>2024년</option>
+                        <option value="2023">2023년</option>
+                        <option value="2022">2022년</option>
+                        <option value="2021">2021년</option>
+                    </select>
+                    
+                    <label for="quarterSelect" style="font-weight: bold; color: #333; margin-left: 15px;">분기:</label>
+                    <select id="quarterSelect" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; background: white;">
+                        <option value="11011" selected>사업보고서</option>
+                        <option value="11012">반기보고서</option>
+                        <option value="11014">3분기보고서</option>
+                        <option value="11013">1분기보고서</option>
+                    </select>
+                </div>
+                
+                <button class="btn" id="loadFinancialBtn" type="button">📊 재무제표 로드</button>
+                <button class="btn" id="analyzeFinancialBtn" type="button" style="margin-left: 10px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%);" onclick="alert('onclick 이벤트 발생!');">🤖 AI 분석</button>
+            </div>
+
+            <!-- 재무 결과 표시 -->
+            <div id="financialResult" class="result" style="display: none;"></div>
+
+            <!-- 재무 지표 카드들 -->
+            <div id="financialMetrics" class="financial-metrics" style="display: none; flex-direction: row !important; flex-wrap: wrap !important;">
+                <div class="metric-card">
+                    <div class="metric-value" id="revenue">-</div>
+                    <div class="metric-label">매출액</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="operatingIncome">-</div>
+                    <div class="metric-label">영업이익</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="netIncome">-</div>
+                    <div class="metric-label">당기순이익</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="totalAssets">-</div>
+                    <div class="metric-label">총자산</div>
+                </div>
+            </div>
+            
+            <!-- 추가 재무 지표 -->
+            <div id="additionalMetrics" class="financial-metrics" style="display: none; margin-top: 20px; flex-direction: row !important; flex-wrap: wrap !important;">
+                <!-- 동적으로 추가 지표가 여기에 표시됩니다 -->
+            </div>
+
+            <!-- 재무제표 주요 지표 테이블 -->
+            <div id="financialTableSection" style="display: none; margin-top: 20px;">
+                <div class="section-title">📊 재무제표 주요 지표</div>
+                <div class="financial-table-container">
+                    <table class="financial-table">
+                        <thead>
+                            <tr>
+                                <th>구분</th>
+                                <th>금액 (조원)</th>
+                                <th>비율 (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="financialTableBody">
+                            <!-- 동적으로 생성됨 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- AI 분석 결과 -->
+            <div id="aiAnalysisSection" style="display: none; margin-top: 20px;">
+                <div class="section-title">🤖 AI 재무제표 분석</div>
+                <div id="aiAnalysisResult" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); line-height: 1.6;">
+                    <!-- AI 분석 결과가 여기에 표시됩니다 -->
+                </div>
+            </div>
+
+            <!-- 차트 섹션 -->
+            <div id="chartsSection" style="display: none;">
+                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <div class="chart-container" style="flex: 1; min-width: 300px; height: 300px; position: relative;">
+                        <div class="chart-title">📈 재무상태표 주요 지표</div>
+                        <canvas id="revenueChart" width="300" height="200" style="max-height: 250px;"></canvas>
+                    </div>
+                    
+                    <div class="chart-container" style="flex: 1; min-width: 300px; height: 300px; position: relative;">
+                        <div class="chart-title">💰 손익계산서 주요 지표</div>
+                        <canvas id="profitabilityChart" width="300" height="200" style="max-height: 250px;"></canvas>
+                    </div>
+                    
+                    <div class="chart-container" style="flex: 1; min-width: 300px; height: 300px; position: relative;">
+                        <div class="chart-title">🏗️ 자산 구조</div>
+                        <canvas id="assetsChart" width="300" height="200" style="max-height: 250px;"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_KEY = '447fcb4de167afbabb21ed7ded674931a89ad0b3';
+        const PROXY_URL = 'http://localhost:3001';
+        let companyCodes = [];
+        let selectedCompany = null;
+        let charts = {};
+
+        // 페이지 로드 시 초기화
+        window.addEventListener('load', async () => {
+            console.log('📄 페이지 로드 완료');
+            await loadCompanyCodes();
+            setupSearchSuggestions();
+            
+            // 검색 버튼 이벤트 리스너 추가
+            const searchBtn = document.querySelector('button[onclick="searchCompany()"]');
+            if (searchBtn) {
+                console.log('✅ 검색 버튼 찾음');
+                
+                // 기존 onclick 제거하고 addEventListener 사용
+                searchBtn.removeAttribute('onclick');
+                searchBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🔘 검색 버튼 클릭 이벤트 발생');
+                    searchCompany();
+                });
+                
+                console.log('✅ 검색 버튼 이벤트 리스너 설정 완료');
+            } else {
+                console.log('❌ 검색 버튼을 찾을 수 없음');
+            }
+            
+            // 재무제표 버튼 이벤트 리스너 추가
+            const loadFinancialBtn = document.getElementById('loadFinancialBtn');
+            if (loadFinancialBtn) {
+                console.log('✅ 재무제표 버튼 찾음');
+                
+                // 기존 이벤트 리스너 모두 제거
+                loadFinancialBtn.onclick = null;
+                loadFinancialBtn.removeEventListener('click', loadFinancialData);
+                
+                // 새로운 이벤트 리스너 추가
+                loadFinancialBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🔘 재무제표 버튼 클릭 이벤트 발생');
+                    loadFinancialData();
+                });
+                
+                // onclick도 추가 (강력한 디버깅을 위해)
+                loadFinancialBtn.onclick = function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🔘 재무제표 버튼 onclick 발생');
+                    loadFinancialData();
+                };
+                
+                console.log('✅ 재무제표 버튼 이벤트 리스너 설정 완료');
+            } else {
+                console.log('❌ 재무제표 버튼을 찾을 수 없음');
+                // 모든 버튼 찾기
+                const allButtons = document.querySelectorAll('button');
+                console.log('📋 페이지의 모든 버튼:', allButtons.length);
+                allButtons.forEach((btn, index) => {
+                    console.log(`버튼 ${index}:`, btn.textContent, btn.id);
+                });
+            }
+
+            // AI 분석 버튼 이벤트 리스너 추가
+            const analyzeFinancialBtn = document.getElementById('analyzeFinancialBtn');
+            if (analyzeFinancialBtn) {
+                console.log('✅ AI 분석 버튼 찾음');
+                
+                analyzeFinancialBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🔘 AI 분석 버튼 클릭 이벤트 발생');
+                    alert('AI 분석 버튼이 클릭되었습니다!');
+                    analyzeFinancialData();
+                });
+                
+                console.log('✅ AI 분석 버튼 이벤트 리스너 설정 완료');
+            } else {
+                console.log('❌ AI 분석 버튼을 찾을 수 없음');
+            }
+        });
+
+        // 회사코드 로드
+                        async function loadCompanyCodes() {
+                    console.log('📥 회사코드 로드 시작');
+                    
+                    try {
+                        // 서버 데이터베이스에서 로드
+                        console.log('📥 서버 데이터베이스에서 로드 시도');
+                        const response = await fetch(`${PROXY_URL}/corp-codes`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            companyCodes = data.companies || [];
+                            console.log('✅ 서버 데이터베이스에서 회사코드 로드 완료:', companyCodes.length);
+                            console.log('📋 서버 데이터베이스 샘플:', companyCodes.slice(0, 5).map(c => c.corp_name));
+                            
+                            // 실제 데이터 구조 확인
+                            if (companyCodes.length > 0) {
+                                console.log('🔍 첫 번째 기업 데이터 구조:', companyCodes[0]);
+                            }
+                            return;
+                        } else {
+                            console.log('❌ 서버 데이터베이스 응답 오류:', response.status, response.statusText);
+                        }
+                    } catch (error) {
+                        console.log('📥 서버 데이터베이스 없음, 로컬 파일 시도');
+                        console.log('❌ 서버 데이터베이스 오류:', error.message);
+                    }
+
+                    try {
+                        // 로컬 파일에서 시도
+                        console.log('📥 로컬 파일에서 로드 시도');
+                        const response = await fetch('./corpCodes.json');
+                        if (response.ok) {
+                            const data = await response.json();
+                            companyCodes = data.companies || [];
+                            console.log('✅ 로컬 파일에서 회사코드 로드 완료:', companyCodes.length);
+                            console.log('📋 로컬 파일 샘플:', companyCodes.slice(0, 5).map(c => c.corp_name));
+                            
+                            // 실제 데이터 구조 확인
+                            if (companyCodes.length > 0) {
+                                console.log('🔍 첫 번째 기업 데이터 구조:', companyCodes[0]);
+                            }
+                            return;
+                        } else {
+                            console.log('❌ 로컬 파일 응답 오류:', response.status, response.statusText);
+                        }
+                    } catch (error) {
+                        console.log('📥 로컬 파일 없음, API에서 로드 시도');
+                        console.log('❌ 로컬 파일 오류:', error.message);
+                    }
+
+                    // API에서 회사코드 로드
+                    try {
+                        console.log('📥 API에서 회사코드 로드 시도');
+                        const response = await fetch(`${PROXY_URL}/api/list.json?crtfc_key=${API_KEY}&bgn_de=20240101&end_de=20241231&page_no=1&page_count=100`);
+                        const data = await response.json();
+                        
+                        console.log('📊 API 응답:', data);
+                        
+                        if (data.status === '000' && data.list) {
+                            companyCodes = data.list.map(item => ({
+                                corp_code: item.corp_code,
+                                corp_name: item.corp_name,
+                                stock_code: item.stock_code
+                            }));
+                            console.log('✅ API에서 회사코드 로드 완료:', companyCodes.length);
+                            console.log('📋 API 데이터 샘플:', companyCodes.slice(0, 5).map(c => c.corp_name));
+                            
+                            // 실제 데이터 구조 확인
+                            if (companyCodes.length > 0) {
+                                console.log('🔍 첫 번째 기업 데이터 구조:', companyCodes[0]);
+                            }
+                        } else {
+                            console.log('❌ API 응답 오류:', data);
+                        }
+                    } catch (error) {
+                        console.error('❌ 회사코드 로드 실패:', error);
+                    }
+                    
+                    console.log('📊 최종 회사코드 수:', companyCodes.length);
+                    console.log('📋 최종 데이터 샘플:', companyCodes.slice(0, 5).map(c => c.corp_name));
+                    
+                    // 데이터 유효성 검사
+                    if (companyCodes.length > 0) {
+                        const validCompanies = companyCodes.filter(c => c.corp_name && c.corp_code);
+                        console.log('✅ 유효한 기업 데이터 수:', validCompanies.length);
+                        console.log('❌ 무효한 기업 데이터 수:', companyCodes.length - validCompanies.length);
+                    }
+                }
+
+        // 검색 제안 설정
+        function setupSearchSuggestions() {
+            const searchInput = document.getElementById('companySearch');
+            const suggestions = document.getElementById('suggestions');
+            
+            searchInput.addEventListener('input', function() {
+                const query = this.value.trim();
+                if (query.length < 2) {
+                    suggestions.style.display = 'none';
+                    return;
+                }
+                
+                console.log('🔍 자동완성 검색:', query, '회사코드 수:', companyCodes.length);
+                
+                const filtered = companyCodes.filter(company => {
+                    if (!company.corp_name) return false;
+                    
+                    const queryLower = query.toLowerCase();
+                    const corpNameLower = company.corp_name.toLowerCase();
+                    
+                    return corpNameLower.includes(queryLower) ||
+                           corpNameLower.replace(/[()]/g, '').includes(queryLower) ||
+                           queryLower.includes(corpNameLower.replace(/[()]/g, '')) ||
+                           corpNameLower.replace(/[주식회사|㈜|㈐|㈑|㈒|㈓|㈔|㈕|㈖|㈗|㈘|㈙]/g, '').includes(queryLower);
+                }).slice(0, 10);
+                
+                console.log('✅ 자동완성 결과:', filtered.length);
+                
+                if (filtered.length > 0) {
+                    suggestions.innerHTML = filtered.map(company => 
+                        `<div class="suggestion-item" onclick="selectCompany('${company.corp_code}', '${company.corp_name}')">
+                            ${company.corp_name} (${company.corp_code})
+                        </div>`
+                    ).join('');
+                    suggestions.style.display = 'block';
+                } else {
+                    suggestions.style.display = 'none';
+                }
+            });
+            
+            // 외부 클릭 시 제안 숨기기
+            document.addEventListener('click', function(e) {
+                if (!searchInput.contains(e.target) && !suggestions.contains(e.target)) {
+                    suggestions.style.display = 'none';
+                }
+            });
+        }
+
+        // 기업 검색 결과 표시
+        function displaySearchResults(companies) {
+            const resultDiv = document.getElementById('searchResult');
+            if (companies.length === 0) {
+                resultDiv.innerHTML = '<div class="error">❌ 검색 결과가 없습니다.</div>';
+                resultDiv.className = 'result error';
+                return;
+            }
+
+            let html = '<div class="success">✅ 검색 결과:</div>';
+            companies.forEach(company => {
+                html += `
+                    <div class="company-item" onclick="selectCompany('${company.corp_code}', '${company.corp_name}')">
+                        <strong>${company.corp_name}</strong> (${company.corp_code})
+                        <br><small>${company.stock_code || '상장정보 없음'}</small>
+                    </div>
+                `;
+            });
+            
+            resultDiv.innerHTML = html;
+            resultDiv.className = 'result success';
+            resultDiv.style.display = 'block';
+        }
+
+        // 기업 선택
+        function selectCompany(corpCode, corpName) {
+            console.log('🏢 기업 선택:', corpCode, corpName);
+            
+            // 기업코드 자동 입력
+            document.getElementById('corpCode').value = corpCode;
+            
+            // 선택된 기업 정보 표시
+            document.getElementById('selectedCompanyName').textContent = corpName;
+            document.getElementById('selectedCompanyDetails').innerHTML = `
+                <div>기업코드: ${corpCode}</div>
+            `;
+            document.getElementById('selectedCompany').style.display = 'block';
+            
+            // 검색 결과 숨기기
+            document.getElementById('searchResult').style.display = 'none';
+            
+            console.log('✅ 기업코드 자동 입력 완료:', corpCode);
+        }
+
+        // 기업 검색
+        async function searchCompany() {
+            const searchTerm = document.getElementById('companySearch').value.trim();
+            if (!searchTerm) {
+                alert('검색할 기업명을 입력해주세요.');
+                return;
+            }
+            
+            const resultDiv = document.getElementById('searchResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div class="loading">🔍 기업을 검색 중입니다...</div>';
+            resultDiv.className = 'result';
+            
+            try {
+                console.log('🔍 기업 검색 시작:', searchTerm);
+                
+                // 1. 먼저 로컬 데이터베이스에서 검색
+                if (companyCodes.length > 0) {
+                    console.log('📊 로컬 데이터베이스 검색 시작. 총 기업 수:', companyCodes.length);
+                    
+                    const localResults = companyCodes.filter(company => {
+                        if (!company.corp_name) return false;
+                        
+                        const corpName = company.corp_name;
+                        const searchLower = searchTerm.toLowerCase();
+                        const corpNameLower = corpName.toLowerCase();
+                        
+                        const matches = corpNameLower.includes(searchLower) ||
+                                      corpNameLower.replace(/[()]/g, '').includes(searchLower) ||
+                                      searchLower.includes(corpNameLower.replace(/[()]/g, '')) ||
+                                      corpNameLower.replace(/[주식회사|㈜|㈐|㈑|㈒|㈓|㈔|㈕|㈖|㈗|㈘|㈙]/g, '').includes(searchLower);
+                        
+                        if (matches) {
+                            console.log('✅ 로컬 매칭:', corpName, '->', searchTerm);
+                        }
+                        
+                        return matches;
+                    });
+                    
+                    if (localResults.length > 0) {
+                        console.log('✅ 로컬 데이터베이스에서 검색 결과:', localResults.length);
+                        console.log('📋 로컬 검색 결과:', localResults.map(c => c.corp_name));
+                        displaySearchResults(localResults);
+                        return;
+                    } else {
+                        console.log('❌ 로컬 데이터베이스에서 매칭 없음');
+                    }
+                }
+                
+                // 2. API에서 직접 검색 (여러 방법 시도)
+                console.log('📡 API에서 직접 검색 시도');
+                
+                // 방법 1: 정확한 기업명으로 검색
+                console.log('🔄 방법 1: 정확한 기업명 검색');
+                let response = await fetch(`${PROXY_URL}/api/list.json?crtfc_key=${API_KEY}&corp_name=${encodeURIComponent(searchTerm)}&page_no=1&page_count=20`);
+                let data = await response.json();
+                
+                console.log('📊 API 응답 (방법1):', data);
+                console.log('📋 방법1 검색 결과:', data.list ? data.list.map(c => c.corp_name) : '없음');
+                
+                if (data.status === '000' && data.list && data.list.length > 0) {
+                    console.log('✅ API 검색 성공 (방법1):', data.list.length);
+                    displaySearchResults(data.list);
+                    return;
+                }
+                
+                // 방법 2: 부분 검색 (더 넓은 범위)
+                console.log('🔄 방법 2 시도: 부분 검색 (200개)');
+                response = await fetch(`${PROXY_URL}/api/list.json?crtfc_key=${API_KEY}&bgn_de=20240101&end_de=20241231&page_no=1&page_count=200`);
+                data = await response.json();
+                
+                if (data.status === '000' && data.list) {
+                    console.log('📊 방법2 전체 결과 수:', data.list.length);
+                    console.log('📋 방법2 샘플 기업명:', data.list.slice(0, 10).map(c => c.corp_name));
+                    
+                    const filteredResults = data.list.filter(company => {
+                        if (!company.corp_name) return false;
+                        
+                        const corpName = company.corp_name;
+                        const searchLower = searchTerm.toLowerCase();
+                        const corpNameLower = corpName.toLowerCase();
+                        
+                        const matches = corpNameLower.includes(searchLower) || 
+                                      searchLower.includes(corpNameLower.replace(/[()]/g, '')) ||
+                                      corpNameLower.replace(/[()]/g, '').includes(searchLower);
+                        
+                        if (matches) {
+                            console.log('✅ 방법2 매칭:', corpName, '->', searchTerm);
+                        }
+                        
+                        return matches;
+                    });
+                    
+                    if (filteredResults.length > 0) {
+                        console.log('✅ 부분 검색 성공:', filteredResults.length);
+                        console.log('📋 방법2 필터링 결과:', filteredResults.map(c => c.corp_name));
+                        displaySearchResults(filteredResults);
+                        return;
+                    } else {
+                        console.log('❌ 방법2에서 매칭 없음');
+                    }
+                }
+                
+                // 방법 3: 더 넓은 범위에서 검색
+                console.log('🔄 방법 3 시도: 넓은 범위 검색 (500개)');
+                response = await fetch(`${PROXY_URL}/api/list.json?crtfc_key=${API_KEY}&bgn_de=20240101&end_de=20241231&page_no=1&page_count=500`);
+                data = await response.json();
+                
+                if (data.status === '000' && data.list) {
+                    console.log('📊 방법3 전체 결과 수:', data.list.length);
+                    console.log('📋 방법3 샘플 기업명:', data.list.slice(0, 10).map(c => c.corp_name));
+                    
+                    const filteredResults = data.list.filter(company => {
+                        if (!company.corp_name) return false;
+                        
+                        const corpName = company.corp_name;
+                        const searchLower = searchTerm.toLowerCase();
+                        const corpNameLower = corpName.toLowerCase();
+                        
+                        // 더 유연한 매칭
+                        const matches = corpNameLower.includes(searchLower) || 
+                                      searchLower.includes(corpNameLower.replace(/[()]/g, '')) ||
+                                      corpNameLower.replace(/[()]/g, '').includes(searchLower) ||
+                                      corpNameLower.replace(/[주식회사|㈜|㈐|㈑|㈒|㈓|㈔|㈕|㈖|㈗|㈘|㈙]/g, '').includes(searchLower);
+                        
+                        if (matches) {
+                            console.log('✅ 방법3 매칭:', corpName, '->', searchTerm);
+                        }
+                        
+                        return matches;
+                    });
+                    
+                    if (filteredResults.length > 0) {
+                        console.log('✅ 넓은 범위 검색 성공:', filteredResults.length);
+                        console.log('📋 방법3 필터링 결과:', filteredResults.map(c => c.corp_name));
+                        displaySearchResults(filteredResults);
+                        return;
+                    } else {
+                        console.log('❌ 방법3에서 매칭 없음');
+                    }
+                }
+                
+                console.log('❌ 모든 검색 방법 실패');
+                resultDiv.innerHTML = `<div class="error">❌ "${searchTerm}"에 대한 검색 결과가 없습니다.</div>`;
+                resultDiv.className = 'result error';
+                
+            } catch (error) {
+                console.error('❌ 검색 오류:', error);
+                resultDiv.innerHTML = `<div class="error">❌ 검색 오류: ${error.message}</div>`;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        // 재무제표 데이터 로드
+        async function loadFinancialData() {
+            const corpCode = document.getElementById('corpCode').value.trim();
+            if (!corpCode) {
+                alert('기업코드를 입력해주세요.');
+                return;
+            }
+
+            // 선택된 연도와 분기 가져오기
+            const selectedYear = document.getElementById('yearSelect').value;
+            const selectedQuarter = document.getElementById('quarterSelect').value;
+            
+            console.log('📊 재무제표 데이터 로드 시작:', corpCode, `${selectedYear}년`, getQuarterName(selectedQuarter));
+
+            // 로딩 상태 표시
+            document.getElementById('financialResult').style.display = 'block';
+            document.getElementById('financialResult').innerHTML = `<div class="loading">재무제표 데이터를 로드 중입니다... (${selectedYear}년 ${getQuarterName(selectedQuarter)})</div>`;
+
+            try {
+                // 선택된 연도와 분기로 데이터 로드
+                console.log(`📊 ${selectedYear}년 ${getQuarterName(selectedQuarter)} 시도 중...`);
+                const data = await loadLatestFinancialData(selectedYear, selectedQuarter);
+                
+                // 성공적으로 데이터를 로드한 경우
+                if (data) {
+                    console.log('✅ 재무제표 데이터 로드 성공:', data);
+                    document.getElementById('financialResult').innerHTML = `
+                        <div style="color: green; font-weight: bold;">
+                            ✅ ${document.getElementById('selectedCompanyName').textContent}의 ${selectedYear}년 ${getQuarterName(selectedQuarter)} 재무제표 데이터를 성공적으로 로드했습니다!
+                        </div>
+                    `;
+                    
+                    // 재무 데이터 표시
+                    displayFinancialData(data);
+                } else {
+                    console.log('❌ 모든 연도와 분기에서 데이터를 찾을 수 없습니다.');
+                    document.getElementById('financialResult').innerHTML = `
+                        <div style="color: red; font-weight: bold;">
+                            ❌ ${selectedYear}년 ${getQuarterName(selectedQuarter)} 데이터를 찾을 수 없습니다.<br>
+                            다른 연도나 분기를 선택해보세요.
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('❌ 재무제표 로드 오류:', error);
+                document.getElementById('financialResult').innerHTML = 
+                    `<div class="error">재무제표 로드 실패: ${error.message}</div>`;
+            }
+        }
+        
+        // 분기 코드를 이름으로 변환하는 함수
+        function getQuarterName(quarterCode) {
+            switch(quarterCode) {
+                case '11011': return '사업보고서';
+                case '11012': return '반기보고서';
+                case '11014': return '3분기보고서';
+                case '11013': return '1분기보고서';
+                default: return '사업보고서';
+            }
+        }
+
+        // 최신 재무제표 데이터 로드
+        async function loadLatestFinancialData(year, reportCode) {
+            try {
+                console.log(`📊 ${year}년 ${reportCode} 재무제표 조회 중...`);
+                
+                const corpCode = document.getElementById('corpCode').value.trim();
+                const url = `${PROXY_URL}/api/fnlttSinglAcnt.json?crtfc_key=${API_KEY}&corp_code=${corpCode}&bsns_year=${year}&reprt_code=${reportCode}`;
+                console.log('📡 API 요청 URL:', url);
+                
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('📊 API 응답 전체:', data);
+                
+                if (data.status === '000' && data.list && data.list.length > 0) {
+                    console.log('✅ 재무제표 데이터 로드 성공:', data.list.length);
+                    console.log('📋 첫 번째 데이터 샘플:', data.list[0]);
+                    console.log('📋 모든 계정과목명:', data.list.map(item => item.account_nm));
+                    return data;
+                } else {
+                    console.log('❌ 재무제표 데이터 없음:', data.message || data);
+                    return null;
+                }
+            } catch (error) {
+                console.error('❌ 재무제표 로드 오류:', error);
+                throw error;
+            }
+        }
+
+        // 재무제표 데이터 처리
+        function processFinancialData(dataList) {
+            console.log('📊 재무제표 데이터 처리 시작:', dataList.length);
+            const processedData = {
+                revenue: 0,
+                operatingIncome: 0,
+                netIncome: 0,
+                totalAssets: 0,
+                totalLiabilities: 0,
+                totalEquity: 0,
+                currentAssets: 0,
+                nonCurrentAssets: 0
+            };
+            
+            // 연결재무제표(CFS) 우선, 개별재무제표(OFS) 차선
+            const fsDivs = ['CFS', 'OFS'];
+            const sjDivs = ['BS', 'IS'];
+            
+            // 각 분류별로 데이터 처리
+            for (const fsDiv of fsDivs) {
+                for (const sjDiv of sjDivs) {
+                    const accounts = dataList.filter(item => item.fs_div === fsDiv && item.sj_div === sjDiv);
+                    if (accounts.length > 0) {
+                        console.log(`📊 ${fsDiv}_${sjDiv} 데이터 처리:`, accounts.length);
+                        
+                        accounts.forEach(account => {
+                            const accountName = account.account_nm;
+                            const currentAmount = parseFloat(account.thstrm_amount?.replace(/,/g, '') || '0');
+                            
+                            if (!isNaN(currentAmount)) {
+                                // 매출액 관련
+                                if (accountName.includes('매출액') || accountName.includes('매출') || 
+                                    accountName.includes('매출금액') || accountName.includes('매출금') || 
+                                    accountName.includes('매출총액') || accountName.includes('매출총금액')) {
+                                    if (processedData.revenue === 0 || fsDiv === 'CFS') {
+                                        processedData.revenue = currentAmount;
+                                        console.log(`💰 매출액 찾음 (${fsDiv}):`, accountName, currentAmount);
+                                    }
+                                }
+                                // 영업이익 관련
+                                else if (accountName.includes('영업이익') || accountName.includes('영업손익') || 
+                                         accountName.includes('영업손익계산서상 영업손익') || 
+                                         accountName.includes('영업손익계산서상 영업이익')) {
+                                    if (processedData.operatingIncome === 0 || fsDiv === 'CFS') {
+                                        processedData.operatingIncome = currentAmount;
+                                        console.log(`📈 영업이익 찾음 (${fsDiv}):`, accountName, currentAmount);
+                                    }
+                                }
+                                // 당기순이익 관련 (중복 제거)
+                                else if ((accountName.includes('당기순이익') || accountName.includes('당기순손익')) && 
+                                         !accountName.includes('(손실)')) {
+                                    if (processedData.netIncome === 0 || fsDiv === 'CFS') {
+                                        processedData.netIncome = currentAmount;
+                                        console.log(`💵 당기순이익 찾음 (${fsDiv}):`, accountName, currentAmount);
+                                    }
+                                }
+                                // 자산총계 관련
+                                else if (accountName.includes('자산총계') || accountName.includes('자산합계') || 
+                                         accountName.includes('자산총액') || accountName.includes('자산총금액')) {
+                                    if (processedData.totalAssets === 0 || fsDiv === 'CFS') {
+                                        processedData.totalAssets = currentAmount;
+                                        console.log(`🏗️ 자산총계 찾음 (${fsDiv}):`, accountName, currentAmount);
+                                    }
+                                }
+                                // 부채총계 관련
+                                else if (accountName.includes('부채총계') || accountName.includes('부채합계') || 
+                                         accountName.includes('부채총액') || accountName.includes('부채총금액')) {
+                                    if (processedData.totalLiabilities === 0 || fsDiv === 'CFS') {
+                                        processedData.totalLiabilities = currentAmount;
+                                        console.log(`📉 부채총계 찾음 (${fsDiv}):`, accountName, currentAmount);
+                                    }
+                                }
+                                // 자본총계 관련
+                                else if (accountName.includes('자본총계') || accountName.includes('자본합계') || 
+                                         accountName.includes('순자산') || accountName.includes('자본총액') || 
+                                         accountName.includes('자본총금액')) {
+                                    if (processedData.totalEquity === 0 || fsDiv === 'CFS') {
+                                        processedData.totalEquity = currentAmount;
+                                        console.log(`📊 자본총계 찾음 (${fsDiv}):`, accountName, currentAmount);
+                                    }
+                                }
+                                // 유동자산 관련
+                                else if (accountName.includes('유동자산') || accountName.includes('유동자산합계') || 
+                                         accountName.includes('유동자산총계') || accountName.includes('유동자산총액') || 
+                                         accountName.includes('유동자산총금액')) {
+                                    if (processedData.currentAssets === 0 || fsDiv === 'CFS') {
+                                        processedData.currentAssets = currentAmount;
+                                        console.log(`💧 유동자산 찾음 (${fsDiv}):`, accountName, currentAmount);
+                                    }
+                                }
+                                // 비유동자산 관련
+                                else if (accountName.includes('비유동자산') || accountName.includes('비유동자산합계') || 
+                                         accountName.includes('비유동자산총계') || accountName.includes('비유동자산총액') || 
+                                         accountName.includes('비유동자산총금액')) {
+                                    if (processedData.nonCurrentAssets === 0 || fsDiv === 'CFS') {
+                                        processedData.nonCurrentAssets = currentAmount;
+                                        console.log(`🏢 비유동자산 찾음 (${fsDiv}):`, accountName, currentAmount);
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+            
+            console.log('📊 처리된 재무 데이터:', processedData);
+            return processedData;
+        }
+
+        // 실제 재무 데이터 표시
+        function displayFinancialData(data) {
+            console.log('📊 재무 데이터 표시 시작:', data);
+            
+            // 데이터가 리스트 형태인 경우 처리
+            let processedData;
+            if (data.list && Array.isArray(data.list)) {
+                processedData = processFinancialData(data.list);
+                processedData.reportCode = document.getElementById('quarterSelect').value;
+                processedData.year = document.getElementById('yearSelect').value;
+            } else {
+                processedData = data;
+            }
+            
+            console.log('📊 처리된 재무 데이터:', processedData);
+            
+            // 재무 지표 계산 및 표시
+            const metrics = calculateFinancialMetrics(processedData);
+            displayFinancialMetrics(metrics);
+            
+            // 차트 생성
+            createCharts(processedData);
+            
+            // 테이블 표시
+            displayFinancialTable(processedData);
+
+            // 섹션들 표시 (가로 배치 강제 적용)
+            const financialMetrics = document.getElementById('financialMetrics');
+            const additionalMetrics = document.getElementById('additionalMetrics');
+            
+            financialMetrics.style.display = 'flex';
+            financialMetrics.style.flexDirection = 'row';
+            financialMetrics.style.flexWrap = 'wrap';
+            financialMetrics.style.justifyContent = 'flex-start';
+            financialMetrics.style.gap = '15px';
+            
+            additionalMetrics.style.display = 'flex';
+            additionalMetrics.style.flexDirection = 'row';
+            additionalMetrics.style.flexWrap = 'wrap';
+            additionalMetrics.style.justifyContent = 'flex-start';
+            additionalMetrics.style.gap = '15px';
+            
+            document.getElementById('financialTableSection').style.display = 'block'; // 테이블 섹션 표시
+            document.getElementById('chartsSection').style.display = 'block';
+            
+            console.log('✅ 재무 데이터 표시 완료');
+        }
+
+        // 재무 지표 계산
+        function calculateFinancialMetrics(data) {
+            console.log('🔄 calculateFinancialMetrics 시작:', data);
+            
+            const metrics = {
+                revenue: data.revenue || 0,
+                operatingIncome: data.operatingIncome || 0,
+                netIncome: data.netIncome || 0,
+                totalAssets: data.totalAssets || 0,
+                totalLiabilities: data.totalLiabilities || 0,
+                totalEquity: data.totalEquity || 0,
+                currentAssets: data.currentAssets || 0,
+                nonCurrentAssets: data.nonCurrentAssets || 0
+            };
+            
+            console.log('📊 기본 지표:', metrics);
+            
+            // 비율 계산
+            metrics.operatingMargin = metrics.revenue > 0 ? (metrics.operatingIncome / metrics.revenue * 100) : 0;
+            metrics.netMargin = metrics.revenue > 0 ? (metrics.netIncome / metrics.revenue * 100) : 0;
+            metrics.debtRatio = metrics.totalAssets > 0 ? (metrics.totalLiabilities / metrics.totalAssets * 100) : 0;
+            metrics.roe = metrics.totalEquity > 0 ? (metrics.netIncome / metrics.totalEquity * 100) : 0;
+            
+            return metrics;
+        }
+
+        // 샘플 데이터 표시
+        function displaySampleData() {
+            const sampleData = {
+                revenue: 279600000000000,
+                operatingIncome: 27000000000000,
+                netIncome: 23000000000000,
+                totalAssets: 400000000000000,
+                historicalData: {
+                    labels: ['2019', '2020', '2021', '2022', '2023'],
+                    revenue: [200, 220, 240, 260, 280],
+                    operatingIncome: [20, 22, 24, 26, 27],
+                    netIncome: [18, 20, 22, 24, 23]
+                }
+            };
+            
+            displayFinancialMetrics(sampleData);
+            createCharts(sampleData);
+            
+            // 가로 배치 강제 적용
+            const financialMetrics = document.getElementById('financialMetrics');
+            financialMetrics.style.display = 'flex';
+            financialMetrics.style.flexDirection = 'row';
+            financialMetrics.style.flexWrap = 'wrap';
+            financialMetrics.style.justifyContent = 'flex-start';
+            financialMetrics.style.gap = '15px';
+            
+            document.getElementById('chartsSection').style.display = 'block';
+            
+            const resultDiv = document.getElementById('searchResult');
+            resultDiv.innerHTML = `<div class="success">📊 ${selectedCompany.corp_name}의 샘플 재무 데이터를 표시합니다.</div>`;
+            resultDiv.className = 'result success';
+        }
+
+        // 재무 지표 표시
+        function displayFinancialMetrics(data) {
+            // 기본 지표 업데이트
+            document.getElementById('revenue').textContent = formatCurrency(data.revenue);
+            document.getElementById('operatingIncome').textContent = formatCurrency(data.operatingIncome);
+            document.getElementById('netIncome').textContent = formatCurrency(data.netIncome);
+            document.getElementById('totalAssets').textContent = formatCurrency(data.totalAssets);
+            
+            // 추가 지표 표시
+            const additionalMetrics = [
+                { label: '부채총계', value: formatCurrency(data.totalLiabilities), color: '#dc3545' },
+                { label: '자본총계', value: formatCurrency(data.totalEquity), color: '#28a745' },
+                { label: '영업이익률', value: data.operatingMargin > 0 ? `${data.operatingMargin.toFixed(1)}%` : 'N/A', color: '#ffc107' },
+                { label: '순이익률', value: data.netMargin > 0 ? `${data.netMargin.toFixed(1)}%` : 'N/A', color: '#17a2b8' },
+                { label: '부채비율', value: data.debtRatio > 0 ? `${data.debtRatio.toFixed(1)}%` : 'N/A', color: '#6c757d' },
+                { label: 'ROE', value: data.roe > 0 ? `${data.roe.toFixed(1)}%` : 'N/A', color: '#6610f2' }
+            ];
+            
+            // 추가 지표를 표시할 컨테이너가 있다면 업데이트
+            const container = document.getElementById('additionalMetrics');
+            if (container) {
+                container.innerHTML = '';
+                additionalMetrics.forEach(metric => {
+                    const div = document.createElement('div');
+                    div.className = 'metric-card';
+                    div.innerHTML = `
+                        <div class="metric-value" style="color: ${metric.color}">${metric.value}</div>
+                        <div class="metric-label">${metric.label}</div>
+                    `;
+                    container.appendChild(div);
+                });
+                container.style.display = 'flex';
+            }
+        }
+
+        // 차트 생성
+        function createCharts(data) {
+            console.log('📊 차트 생성 시작:', data);
+            
+            // 기존 차트 제거
+            const existingCharts = Chart.getChart('revenueChart');
+            if (existingCharts) {
+                existingCharts.destroy();
+            }
+            
+            const existingCharts2 = Chart.getChart('profitabilityChart');
+            if (existingCharts2) {
+                existingCharts2.destroy();
+            }
+            
+            const existingCharts3 = Chart.getChart('assetsChart');
+            if (existingCharts3) {
+                existingCharts3.destroy();
+            }
+            
+            // 선택된 연도와 분기 정보 사용
+            const year = data.year || new Date().getFullYear();
+            const quarter = getQuarterFromReportCode(data.reportCode || '11011');
+            
+            // 차트 제목에 연도/분기 정보 추가
+            const yearQuarterInfo = `${year}년 ${quarter}`;
+            
+            // 1. 재무상태표 차트 (자산, 부채, 자본)
+            const revenueCtx = document.getElementById('revenueChart');
+            if (revenueCtx) {
+                const revenueChart = new Chart(revenueCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['자산총계', '부채총계', '자본총계'],
+                        datasets: [{
+                            label: `${yearQuarterInfo} 재무상태표`,
+                            data: [
+                                data.totalAssets || 0,
+                                data.totalLiabilities || 0,
+                                data.totalEquity || 0
+                            ],
+                            backgroundColor: [
+                                'rgba(54, 162, 235, 0.8)',
+                                'rgba(255, 99, 132, 0.8)',
+                                'rgba(75, 192, 192, 0.8)'
+                            ],
+                            borderColor: [
+                                'rgba(54, 162, 235, 1)',
+                                'rgba(255, 99, 132, 1)',
+                                'rgba(75, 192, 192, 1)'
+                            ],
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: `📈 재무상태표 주요 지표 (${yearQuarterInfo})`,
+                                font: { size: 14, weight: 'bold' }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const value = context.parsed.y;
+                                        return `${context.label}: ${(value / 1000000000000).toFixed(1)}조원`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return (value / 1000000000000).toFixed(1) + '조원';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // 2. 손익계산서 차트 (매출, 영업이익, 당기순이익)
+            const profitabilityCtx = document.getElementById('profitabilityChart');
+            if (profitabilityCtx) {
+                const profitabilityChart = new Chart(profitabilityCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['매출액', '영업이익', '당기순이익'],
+                        datasets: [{
+                            label: `${yearQuarterInfo} 손익계산서`,
+                            data: [
+                                data.revenue || 0,
+                                data.operatingIncome || 0,
+                                data.netIncome || 0
+                            ],
+                            backgroundColor: [
+                                'rgba(255, 159, 64, 0.8)',
+                                'rgba(153, 102, 255, 0.8)',
+                                'rgba(255, 205, 86, 0.8)'
+                            ],
+                            borderColor: [
+                                'rgba(255, 159, 64, 1)',
+                                'rgba(153, 102, 255, 1)',
+                                'rgba(255, 205, 86, 1)'
+                            ],
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: `💰 손익계산서 주요 지표 (${yearQuarterInfo})`,
+                                font: { size: 14, weight: 'bold' }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const value = context.parsed.y;
+                                        return `${context.label}: ${(value / 1000000000000).toFixed(1)}조원`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return (value / 1000000000000).toFixed(1) + '조원';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // 3. 자산 구조 차트 (유동자산 vs 비유동자산)
+            const assetsCtx = document.getElementById('assetsChart');
+            if (assetsCtx) {
+                const assetsChart = new Chart(assetsCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['유동자산', '비유동자산'],
+                        datasets: [{
+                            label: `${yearQuarterInfo} 자산 구조`,
+                            data: [
+                                data.currentAssets || 0,
+                                data.nonCurrentAssets || 0
+                            ],
+                            backgroundColor: [
+                                'rgba(75, 192, 192, 0.8)',
+                                'rgba(255, 99, 132, 0.8)'
+                            ],
+                            borderColor: [
+                                'rgba(75, 192, 192, 1)',
+                                'rgba(255, 99, 132, 1)'
+                            ],
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: `🏗️ 자산 구조 (${yearQuarterInfo})`,
+                                font: { size: 14, weight: 'bold' }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const value = context.parsed;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((value / total) * 100).toFixed(1);
+                                        return `${context.label}: ${(value / 1000000000000).toFixed(1)}조원 (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            console.log('📊 차트 생성 완료');
+        }
+        
+        // 보고서 코드로부터 분기 정보 추출
+        function getQuarterFromReportCode(reportCode) {
+            switch(reportCode) {
+                case '11011': return '사업보고서';
+                case '11012': return '반기보고서';
+                case '11014': return '3분기보고서';
+                case '11013': return '1분기보고서';
+                default: return '사업보고서';
+            }
+        }
+
+    // 통화 포맷팅
+        function formatCurrency(value) {
+            if (value >= 1e12) {
+                return (value / 1e12).toFixed(1) + '조원';
+            } else if (value >= 1e8) {
+                return (value / 1e8).toFixed(1) + '억원';
+            } else if (value >= 1e4) {
+                return (value / 1e4).toFixed(1) + '만원';
+            } else {
+                return value.toLocaleString() + '원';
+            }
+        }
+
+        // 재무 데이터를 테이블 형태로 표시
+        function displayFinancialTable(data) {
+            const tableBody = document.getElementById('financialTableBody');
+            if (!tableBody) return;
+            
+            tableBody.innerHTML = '';
+            
+            // 매출액
+            if (data.revenue > 0) {
+                addTableRow('매출액', data.revenue, '100.0');
+            }
+            
+            // 영업이익
+            if (data.operatingIncome > 0) {
+                const operatingMargin = ((data.operatingIncome / data.revenue) * 100).toFixed(1);
+                addTableRow('영업이익', data.operatingIncome, operatingMargin);
+            }
+            
+            // 당기순이익
+            if (data.netIncome > 0) {
+                const netMargin = ((data.netIncome / data.revenue) * 100).toFixed(1);
+                addTableRow('당기순이익', data.netIncome, netMargin);
+            }
+            
+            // 총자산
+            if (data.totalAssets > 0) {
+                addTableRow('총자산', data.totalAssets, '100.0');
+            }
+            
+            // 총부채
+            if (data.totalLiabilities > 0) {
+                const debtRatio = ((data.totalLiabilities / data.totalAssets) * 100).toFixed(1);
+                addTableRow('총부채', data.totalLiabilities, debtRatio);
+            }
+            
+            // 자본총계
+            if (data.totalEquity > 0) {
+                const equityRatio = ((data.totalEquity / data.totalAssets) * 100).toFixed(1);
+                addTableRow('자본총계', data.totalEquity, equityRatio);
+            }
+            
+            // 유동자산
+            if (data.currentAssets > 0) {
+                const currentRatio = ((data.currentAssets / data.totalAssets) * 100).toFixed(1);
+                addTableRow('유동자산', data.currentAssets, currentRatio);
+            }
+            
+            // 비유동자산
+            if (data.nonCurrentAssets > 0) {
+                const nonCurrentRatio = ((data.nonCurrentAssets / data.totalAssets) * 100).toFixed(1);
+                addTableRow('비유동자산', data.nonCurrentAssets, nonCurrentRatio);
+            }
+        }
+        
+        // 테이블 행 추가
+        function addTableRow(label, amount, ratio) {
+            const tableBody = document.getElementById('financialTableBody');
+            const row = document.createElement('tr');
+            
+            row.innerHTML = `
+                <td><strong>${label}</strong></td>
+                <td>${(amount / 1000000000000).toFixed(1)}</td>
+                <td>${ratio}</td>
+            `;
+            
+            tableBody.appendChild(row);
+        }
+
+        // AI 재무제표 분석
+        async function analyzeFinancialData() {
+            console.log('🤖 AI 분석 시작');
+            
+            // 현재 표시된 재무 데이터가 있는지 확인
+            const financialMetrics = document.getElementById('financialMetrics');
+            if (financialMetrics.style.display === 'none') {
+                alert('먼저 재무제표를 로드해주세요.');
+                return;
+            }
+
+            // 분석 결과 영역 표시
+            const aiAnalysisSection = document.getElementById('aiAnalysisSection');
+            const aiAnalysisResult = document.getElementById('aiAnalysisResult');
+            
+            aiAnalysisResult.innerHTML = '<div style="text-align: center; padding: 20px;"><div class="loading">🤖 AI가 재무제표를 분석하고 있습니다...</div></div>';
+            aiAnalysisSection.style.display = 'block';
+
+            try {
+                // 현재 재무 데이터 수집
+                const currentData = {
+                    revenue: parseFloat(document.getElementById('revenue').textContent.replace(/[^0-9.-]/g, '')) * 1000000000000,
+                    operatingIncome: parseFloat(document.getElementById('operatingIncome').textContent.replace(/[^0-9.-]/g, '')) * 1000000000000,
+                    netIncome: parseFloat(document.getElementById('netIncome').textContent.replace(/[^0-9.-]/g, '')) * 1000000000000,
+                    totalAssets: parseFloat(document.getElementById('totalAssets').textContent.replace(/[^0-9.-]/g, '')) * 1000000000000,
+                    totalLiabilities: 0,
+                    totalEquity: 0,
+                    operatingMargin: 0,
+                    netMargin: 0,
+                    debtRatio: 0,
+                    roe: 0
+                };
+
+                // 추가 지표들 수집
+                const additionalMetrics = document.querySelectorAll('#additionalMetrics .metric-card');
+                additionalMetrics.forEach(card => {
+                    const label = card.querySelector('.metric-label').textContent;
+                    const value = card.querySelector('.metric-value').textContent;
+                    
+                    if (label === '부채총계') {
+                        currentData.totalLiabilities = parseFloat(value.replace(/[^0-9.-]/g, '')) * 1000000000000;
+                    } else if (label === '자본총계') {
+                        currentData.totalEquity = parseFloat(value.replace(/[^0-9.-]/g, '')) * 1000000000000;
+                    } else if (label === '영업이익률') {
+                        currentData.operatingMargin = parseFloat(value.replace(/[^0-9.-]/g, ''));
+                    } else if (label === '순이익률') {
+                        currentData.netMargin = parseFloat(value.replace(/[^0-9.-]/g, ''));
+                    } else if (label === '부채비율') {
+                        currentData.debtRatio = parseFloat(value.replace(/[^0-9.-]/g, ''));
+                    } else if (label === 'ROE') {
+                        currentData.roe = parseFloat(value.replace(/[^0-9.-]/g, ''));
+                    }
+                });
+
+                console.log('📊 분석할 재무 데이터:', currentData);
+
+                // 서버에 AI 분석 요청
+                const response = await fetch(`${PROXY_URL}/analyze-financials`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(currentData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    // 마크다운을 HTML로 변환하여 표시
+                    const htmlContent = result.analysis
+                        .replace(/\n/g, '<br>')
+                        .replace(/## (.*)/g, '<h2>$1</h2>')
+                        .replace(/### (.*)/g, '<h3>$1</h3>')
+                        .replace(/\*\*(.*)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\*(.*)\*/g, '<em>$1</em>');
+                    
+                    aiAnalysisResult.innerHTML = `
+                        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+                            ${htmlContent}
+                        </div>
+                    `;
+                    
+                    console.log('✅ AI 분석 완료');
+                } else {
+                    throw new Error(result.error || '분석 실패');
+                }
+
+            } catch (error) {
+                console.error('❌ AI 분석 오류:', error);
+                aiAnalysisResult.innerHTML = `
+                    <div style="color: #dc3545; text-align: center; padding: 20px;">
+                        <h3>❌ AI 분석 실패</h3>
+                        <p>${error.message}</p>
+                        <p>Gemini API 키가 설정되어 있는지 확인해주세요.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Enter 키로 검색
+        document.getElementById('companySearch').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                searchCompany();
+            }
+        });
+    </script>
+</body>
+</html> 

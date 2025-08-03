@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>빠른 API 테스트</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .result {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <h1>🔍 빠른 API 접속 테스트</h1>
+    
+    <button onclick="testApi()">🧪 API 테스트</button>
+    <button onclick="testNetwork()">🌐 네트워크 테스트</button>
+    
+    <div id="result" class="result">결과가 여기에 표시됩니다...</div>
+
+    <script>
+        const API_KEY = '447fcb4de167afbabb21ed7ded674931a89ad0b3';
+        
+        async function testApi() {
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.className = 'result info';
+            resultDiv.textContent = '🔍 API 호출 중...';
+            
+            try {
+                const url = `https://opendart.fss.or.kr/api/list.json?crtfc_key=${API_KEY}&bgn_de=20240101&end_de=20240101&page_no=1&page_count=3`;
+                
+                resultDiv.textContent += `\n📡 요청 URL: ${url}`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.status === '000') {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `
+✅ API 접속 성공!
+
+📊 응답 정보:
+- 상태: ${data.status}
+- 총 건수: ${data.total_count || 0}
+- 데이터 개수: ${data.list ? data.list.length : 0}
+
+📋 첫 번째 데이터:
+${data.list && data.list.length > 0 ? JSON.stringify(data.list[0], null, 2) : '데이터가 없습니다.'}
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `
+❌ API 오류: ${data.status}
+메시지: ${data.message || '알 수 없는 오류'}
+
+💡 오류 코드 해석:
+${getErrorMessage(data.status)}
+                    `;
+                }
+                
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `
+❌ API 접속 실패!
+
+오류: ${error.message}
+
+💡 가능한 원인:
+1. CORS 문제 (로컬 서버 사용 필요)
+2. 인터넷 연결 문제
+3. API 키 문제
+4. 서버 문제
+                `;
+            }
+        }
+        
+        async function testNetwork() {
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.className = 'result info';
+            resultDiv.textContent = '🌐 네트워크 연결 테스트 중...';
+            
+            try {
+                const response = await fetch('https://httpbin.org/get');
+                const data = await response.json();
+                
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `
+✅ 네트워크 연결 성공!
+
+📋 연결 정보:
+- 상태: ${response.status}
+- 서버: ${data.origin}
+- User-Agent: ${data.headers['User-Agent']}
+
+💡 인터넷 연결은 정상입니다.
+                `;
+                
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `
+❌ 네트워크 연결 실패!
+
+오류: ${error.message}
+
+💡 해결 방법:
+1. 인터넷 연결 확인
+2. 방화벽 설정 확인
+3. 프록시 설정 확인
+                `;
+            }
+        }
+        
+        // 오류 메시지 해석
+        function getErrorMessage(status) {
+            const messages = {
+                '000': '정상',
+                '010': '등록되지 않은 키입니다.',
+                '011': '사용할 수 없는 키입니다.',
+                '012': '접근할 수 없는 IP입니다.',
+                '013': '조회된 데이터가 없습니다.',
+                '014': '파일이 존재하지 않습니다.',
+                '020': '요청 제한을 초과하였습니다.',
+                '021': '조회 가능한 회사 개수가 초과하였습니다. (최대 100건)',
+                '100': '필드의 부적절한 값입니다.',
+                '101': '부적절한 접근입니다.',
+                '800': '시스템 점검으로 인한 서비스가 중지 중입니다.',
+                '900': '정의되지 않은 오류가 발생하였습니다.',
+                '901': '사용자 계정의 개인정보 보유기간이 만료되어 사용할 수 없는 키입니다.'
+            };
+            
+            return messages[status] || `알 수 없는 오류 코드: ${status}`;
+        }
+        
+        // 페이지 로드 시 상태 확인
+        window.addEventListener('load', () => {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = 'result info';
+            resultDiv.textContent = `
+🔄 페이지 로드 완료!
+
+📋 설정된 API 키:
+- 키 길이: ${API_KEY.length}자리
+- 키 (처음 10자리): ${API_KEY.substring(0, 10)}...
+
+💡 테스트 방법:
+1. "🧪 API 테스트" 버튼으로 OpenDart API 접속 테스트
+2. "🌐 네트워크 테스트" 버튼으로 인터넷 연결 테스트
+            `;
+        });
+    </script>
+</body>
+</html> 

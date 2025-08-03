@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenDart API 프로젝트</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #007bff;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏢 OpenDart API 프로젝트</h1>
+        
+        <div class="card">
+            <h2>📋 프로젝트 개요</h2>
+            <p>OpenDart API를 사용하여 회사 정보를 조회하고 다운로드하는 프로젝트입니다.</p>
+        </div>
+        
+        <div class="card">
+            <h2>🚀 시작하기</h2>
+            <p>다음 단계를 따라 프로젝트를 설정하세요:</p>
+            <ol>
+                <li>API 키 설정: <code>config.env</code> 파일에 OpenDart API 키를 입력</li>
+                <li>로컬 서버 시작: <code>python -m http.server 8000</code></li>
+                <li>브라우저에서 접속: <code>http://localhost:8000</code></li>
+            </ol>
+        </div>
+        
+        <div class="card">
+            <h2>📁 파일 목록</h2>
+            <ul>
+                <li><strong>index.html</strong> - 메인 페이지 (현재 페이지)</li>
+                <li><strong>config.env</strong> - API 키 설정 파일</li>
+                <li><strong>api-test.html</strong> - API 테스트 페이지</li>
+                <li><strong>company-downloader.html</strong> - 회사코드 다운로더</li>
+            </ul>
+        </div>
+        
+        <div class="card">
+            <h2>🔧 도구</h2>
+            <button onclick="window.open('api-test.html', '_blank')">🧪 API 테스트</button>
+            <button onclick="window.open('company-downloader.html', '_blank')">📥 회사코드 다운로더</button>
+        </div>
+        
+        <div class="card info">
+            <h2>💡 팁</h2>
+            <p><strong>API 키 발급:</strong> <a href="https://opendart.fss.or.kr/guide/main.do" target="_blank">OpenDart 공식 사이트</a>에서 API 키를 발급받으세요.</p>
+            <p><strong>CORS 문제:</strong> 브라우저에서 직접 파일을 열면 API 호출이 차단됩니다. 반드시 로컬 서버를 사용하세요.</p>
+        </div>
+    </div>
+</body>
+</html> 

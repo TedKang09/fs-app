@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API 디버그</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .section { margin-bottom: 30px; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .btn { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
+        .btn:hover { background: #0056b3; }
+        .result { margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px; white-space: pre-wrap; font-family: monospace; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 API 디버그 도구</h1>
+        
+        <div class="section">
+            <h2>📊 재무제표 API 테스트</h2>
+            <button class="btn" onclick="testFinancialAPI()">재무제표 API 호출</button>
+            <div id="financialResult" class="result"></div>
+        </div>
+        
+        <div class="section">
+            <h2>📋 데이터 구조 분석</h2>
+            <button class="btn" onclick="analyzeData()">데이터 분석</button>
+            <div id="analysisResult" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_KEY = '447fcb4de167afbabb21ed7ded674931a89ad0b3';
+        const PROXY_URL = 'http://localhost:3001';
+
+        async function testFinancialAPI() {
+            const resultDiv = document.getElementById('financialResult');
+            resultDiv.innerHTML = '🔄 API 호출 중...';
+            
+            try {
+                const corpCode = '00164779'; // 삼성전자
+                const url = `${PROXY_URL}/api/fnlttSinglAcnt.json?crtfc_key=${API_KEY}&corp_code=${corpCode}&bsns_year=2024&reprt_code=11011`;
+                
+                console.log('📡 API 요청 URL:', url);
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                console.log('📊 API 응답 전체:', data);
+                
+                let result = `📊 API 응답 전체:\n${JSON.stringify(data, null, 2)}\n\n`;
+                
+                if (data.status === '000' && data.list && data.list.length > 0) {
+                    result += `✅ 재무제표 데이터 로드 성공: ${data.list.length}개 항목\n\n`;
+                    result += `📋 첫 번째 데이터 샘플:\n${JSON.stringify(data.list[0], null, 2)}\n\n`;
+                    result += `📋 모든 계정과목명:\n${data.list.map(item => item.account_nm).join('\n')}\n\n`;
+                    
+                    // 데이터 처리 과정 시뮬레이션
+                    result += `📊 데이터 처리 과정:\n`;
+                    result += `📊 재무제표 데이터 처리 시작: ${data.list.length}개 항목\n`;
+                    
+                    const fsDivs = ['CFS', 'OFS'];
+                    const sjDivs = ['BS', 'IS'];
+                    
+                    for (const fsDiv of fsDivs) {
+                        for (const sjDiv of sjDivs) {
+                            const accounts = data.list.filter(item => item.fs_div === fsDiv && item.sj_div === sjDiv);
+                            if (accounts.length > 0) {
+                                result += `📊 ${fsDiv}_${sjDiv} 데이터 처리: ${accounts.length}개 항목\n`;
+                                
+                                // 계정과목별 매칭 테스트
+                                const testKeywords = ['매출액', '영업이익', '당기순이익', '자산총계', '부채총계', '자본총계'];
+                                for (const keyword of testKeywords) {
+                                    const matches = accounts.filter(account => 
+                                        account.account_nm.includes(keyword)
+                                    );
+                                    if (matches.length > 0) {
+                                        result += `✅ "${keyword}" 매칭: ${matches.length}개 항목\n`;
+                                        matches.forEach(match => {
+                                            result += `  - ${match.account_nm}: ${match.thstrm_amount}\n`;
+                                        });
+                                    } else {
+                                        result += `❌ "${keyword}" 매칭 없음\n`;
+                                    }
+                                }
+                                result += '\n';
+                            }
+                        }
+                    }
+                } else {
+                    result += `❌ 재무제표 데이터 없음: ${data.message || JSON.stringify(data)}\n`;
+                }
+                
+                resultDiv.innerHTML = result;
+                
+            } catch (error) {
+                console.error('❌ API 호출 오류:', error);
+                resultDiv.innerHTML = `❌ 오류: ${error.message}`;
+            }
+        }
+
+        async function analyzeData() {
+            const resultDiv = document.getElementById('analysisResult');
+            resultDiv.innerHTML = '🔄 데이터 분석 중...';
+            
+            try {
+                const corpCode = '00164779';
+                const url = `${PROXY_URL}/api/fnlttSinglAcnt.json?crtfc_key=${API_KEY}&corp_code=${corpCode}&bsns_year=2024&reprt_code=11011`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.status === '000' && data.list && data.list.length > 0) {
+                    let analysis = `📊 데이터 구조 분석 결과:\n\n`;
+                    
+                    // 1. 필드 구조 분석
+                    const sample = data.list[0];
+                    analysis += `📋 필드 구조:\n`;
+                    for (const [key, value] of Object.entries(sample)) {
+                        analysis += `  - ${key}: ${typeof value} (${value})\n`;
+                    }
+                    analysis += '\n';
+                    
+                    // 2. fs_div와 sj_div 분포
+                    const fsDivCount = {};
+                    const sjDivCount = {};
+                    data.list.forEach(item => {
+                        fsDivCount[item.fs_div] = (fsDivCount[item.fs_div] || 0) + 1;
+                        sjDivCount[item.sj_div] = (sjDivCount[item.sj_div] || 0) + 1;
+                    });
+                    
+                    analysis += `📊 fs_div 분포:\n`;
+                    for (const [div, count] of Object.entries(fsDivCount)) {
+                        analysis += `  - ${div}: ${count}개\n`;
+                    }
+                    analysis += '\n';
+                    
+                    analysis += `📊 sj_div 분포:\n`;
+                    for (const [div, count] of Object.entries(sjDivCount)) {
+                        analysis += `  - ${div}: ${count}개\n`;
+                    }
+                    analysis += '\n';
+                    
+                    // 3. 계정과목명 패턴 분석
+                    const accountNames = data.list.map(item => item.account_nm);
+                    const uniqueNames = [...new Set(accountNames)];
+                    analysis += `📋 고유 계정과목명 수: ${uniqueNames.length}개\n`;
+                    analysis += `📋 전체 계정과목명 수: ${accountNames.length}개\n\n`;
+                    
+                    // 4. 금액 데이터 분석
+                    const amountFields = ['thstrm_amount', 'frmtrm_amount', 'bfefrmtrm_amount'];
+                    analysis += `💰 금액 필드 분석:\n`;
+                    for (const field of amountFields) {
+                        const nonEmpty = data.list.filter(item => item[field] && item[field] !== '');
+                        analysis += `  - ${field}: ${nonEmpty.length}개 (총 ${data.list.length}개 중)\n`;
+                    }
+                    
+                    resultDiv.innerHTML = analysis;
+                } else {
+                    resultDiv.innerHTML = `❌ 데이터 없음: ${data.message || JSON.stringify(data)}`;
+                }
+                
+            } catch (error) {
+                console.error('❌ 분석 오류:', error);
+                resultDiv.innerHTML = `❌ 오류: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html> 

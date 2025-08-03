@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API 테스트</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .result {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .warning { background: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 API 테스트</h1>
+        
+        <div class="warning">
+            <strong>⚠️ 중요:</strong> 이 페이지는 로컬 서버에서 실행해야 합니다.
+            <br>PowerShell에서: <code>python -m http.server 8000</code>
+            <br>브라우저에서: <code>http://localhost:8000/api-test.html</code>
+        </div>
+        
+        <button onclick="testApi()">🔍 API 테스트</button>
+        <button onclick="testConfig()">📄 설정 파일 테스트</button>
+        <button onclick="testCORS()">🌐 CORS 테스트</button>
+        
+        <div id="result" class="result info">
+            결과가 여기에 표시됩니다...
+        </div>
+    </div>
+
+    <script>
+        // API 키를 직접 설정 (안정성을 위해)
+        const API_KEY = '447fcb4de167afbabb21ed7ded674931a89ad0b3';
+        
+        async function testApi() {
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.className = 'result info';
+            resultDiv.textContent = '🔍 API 호출 중...';
+            
+            try {
+                const url = `https://opendart.fss.or.kr/api/list.json?crtfc_key=${API_KEY}&bgn_de=20240101&end_de=20240101&page_no=1&page_count=5`;
+                
+                resultDiv.textContent += `\n📡 요청 URL: ${url}`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.status === '000') {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `
+✅ API 호출 성공!
+
+📊 응답 정보:
+- 상태: ${data.status}
+- 총 건수: ${data.total_count || 0}
+- 데이터 개수: ${data.list ? data.list.length : 0}
+
+📋 첫 번째 데이터:
+${data.list && data.list.length > 0 ? JSON.stringify(data.list[0], null, 2) : '데이터가 없습니다.'}
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `
+❌ API 오류: ${data.status}
+메시지: ${data.message || '알 수 없는 오류'}
+
+💡 오류 코드 해석:
+${getErrorMessage(data.status)}
+                    `;
+                }
+                
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `
+❌ API 호출 실패!
+
+오류: ${error.message}
+
+💡 해결 방법:
+1. 로컬 서버를 사용하세요: python -m http.server 8000
+2. 브라우저에서 http://localhost:8000/api-test.html 접속
+3. 인터넷 연결 확인
+                `;
+            }
+        }
+        
+        async function testConfig() {
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.className = 'result info';
+            resultDiv.textContent = '📄 설정 파일 읽는 중...';
+            
+            try {
+                const response = await fetch('./config.env');
+                const configText = await response.text();
+                
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `
+✅ 설정 파일 읽기 성공!
+
+📋 파일 내용:
+${configText}
+
+🔍 API 키 확인:
+${configText.includes('OPENDART_API_KEY') ? '✅ API 키가 파일에 있습니다.' : '❌ API 키가 파일에 없습니다.'}
+                `;
+                
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `
+❌ 설정 파일 읽기 실패!
+
+오류: ${error.message}
+
+💡 해결 방법:
+1. config.env 파일이 올바른 위치에 있는지 확인
+2. 로컬 서버를 사용하세요
+                `;
+            }
+        }
+        
+        async function testCORS() {
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.className = 'result info';
+            resultDiv.textContent = '🌐 CORS 테스트 중...';
+            
+            try {
+                const response = await fetch('https://opendart.fss.or.kr/api/list.json?crtfc_key=test&page_no=1&page_count=1');
+                const data = await response.json();
+                
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `
+✅ CORS 테스트 성공!
+
+API 서버에 접근할 수 있습니다.
+이제 실제 API 키로 테스트해보세요.
+                `;
+                
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `
+❌ CORS 오류 발생!
+
+오류: ${error.message}
+
+💡 해결 방법:
+로컬 서버를 사용하세요:
+1. PowerShell에서: python -m http.server 8000
+2. 브라우저에서: http://localhost:8000/api-test.html
+                `;
+            }
+        }
+        
+        // 오류 메시지 해석
+        function getErrorMessage(status) {
+            const messages = {
+                '000': '정상',
+                '010': '등록되지 않은 키입니다.',
+                '011': '사용할 수 없는 키입니다.',
+                '012': '접근할 수 없는 IP입니다.',
+                '013': '조회된 데이터가 없습니다.',
+                '014': '파일이 존재하지 않습니다.',
+                '020': '요청 제한을 초과하였습니다.',
+                '021': '조회 가능한 회사 개수가 초과하였습니다. (최대 100건)',
+                '100': '필드의 부적절한 값입니다.',
+                '101': '부적절한 접근입니다.',
+                '800': '시스템 점검으로 인한 서비스가 중지 중입니다.',
+                '900': '정의되지 않은 오류가 발생하였습니다.',
+                '901': '사용자 계정의 개인정보 보유기간이 만료되어 사용할 수 없는 키입니다.'
+            };
+            
+            return messages[status] || `알 수 없는 오류 코드: ${status}`;
+        }
+        
+        // 페이지 로드 시 상태 확인
+        window.addEventListener('load', () => {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = 'result info';
+            resultDiv.textContent = `
+🔄 페이지 로드 완료!
+
+📋 설정된 API 키:
+- 키 길이: ${API_KEY.length}자리
+- 키 (처음 10자리): ${API_KEY.substring(0, 10)}...
+
+💡 테스트 방법:
+1. "🔍 API 테스트" 버튼으로 API 호출 테스트
+2. "📄 설정 파일 테스트" 버튼으로 파일 읽기 테스트
+3. "🌐 CORS 테스트" 버튼으로 CORS 문제 확인
+            `;
+        });
+    </script>
+</body>
+</html> 

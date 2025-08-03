@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회사코드 다운로더</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left: 4px solid #17a2b8;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border-left: 4px solid #ffc107;
+        }
+        .progress {
+            background: #e9ecef;
+            border-radius: 5px;
+            height: 20px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        .progress-bar {
+            background: #007bff;
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .result-table th, .result-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .result-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .download-btn {
+            background: #28a745;
+        }
+        .download-btn:hover {
+            background: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏢 회사코드 다운로더</h1>
+        
+        <div class="warning">
+            <strong>⚠️ 중요:</strong> 이 페이지는 로컬 서버에서 실행해야 합니다.
+            <br>PowerShell에서: <code>python -m http.server 8000</code>
+            <br>브라우저에서: <code>http://localhost:8000/company-downloader.html</code>
+        </div>
+        
+        <div class="form-group">
+            <label for="startDate">시작일:</label>
+            <input type="date" id="startDate" value="2024-01-01">
+        </div>
+        
+        <div class="form-group">
+            <label for="endDate">종료일:</label>
+            <input type="date" id="endDate">
+        </div>
+        
+        <div class="form-group">
+            <label for="corpClass">법인구분:</label>
+            <select id="corpClass">
+                <option value="">전체</option>
+                <option value="Y">유가증권</option>
+                <option value="K">코스닥</option>
+                <option value="N">코넥스</option>
+                <option value="E">기타</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="pageCount">페이지별 건수:</label>
+            <select id="pageCount">
+                <option value="10">10건</option>
+                <option value="20">20건</option>
+                <option value="50">50건</option>
+                <option value="100">100건</option>
+            </select>
+        </div>
+        
+        <button onclick="downloadCompanyCodes()">📥 회사코드 다운로드</button>
+        <button onclick="downloadAsCSV()" id="csvBtn" disabled class="download-btn">💾 CSV 다운로드</button>
+        <button onclick="downloadAsJSON()" id="jsonBtn" disabled class="download-btn">📄 JSON 다운로드</button>
+        
+        <div id="status" class="status info" style="display: none;">
+            상태 메시지가 여기에 표시됩니다.
+        </div>
+        
+        <div class="progress" id="progressBar" style="display: none;">
+            <div class="progress-bar" id="progressBarFill"></div>
+        </div>
+        
+        <div id="resultContainer" style="display: none;">
+            <h3>📊 다운로드 결과</h3>
+            <div id="resultInfo"></div>
+            <table class="result-table" id="resultTable">
+                <thead>
+                    <tr>
+                        <th>법인구분</th>
+                        <th>회사명</th>
+                        <th>고유번호</th>
+                        <th>종목코드</th>
+                        <th>보고서명</th>
+                        <th>접수일자</th>
+                    </tr>
+                </thead>
+                <tbody id="resultTableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // API 키를 직접 설정
+        const API_KEY = '447fcb4de167afbabb21ed7ded674931a89ad0b3';
+        let downloadedData = [];
+        
+        // 오늘 날짜를 기본값으로 설정
+        document.getElementById('endDate').value = new Date().toISOString().split('T')[0];
+        
+        // 회사코드 다운로드
+        async function downloadCompanyCodes() {
+            const startDate = document.getElementById('startDate').value.replace(/-/g, '');
+            const endDate = document.getElementById('endDate').value.replace(/-/g, '');
+            const corpClass = document.getElementById('corpClass').value;
+            const pageCount = document.getElementById('pageCount').value;
+            
+            if (!startDate || !endDate) {
+                showStatus('❌ 시작일과 종료일을 모두 입력하세요.', 'error');
+                return;
+            }
+            
+            showStatus('🔍 회사코드 다운로드를 시작합니다...', 'info');
+            showProgress(true);
+            
+            try {
+                let allData = [];
+                let pageNo = 1;
+                let totalPage = 1;
+                
+                do {
+                    // 진행률 업데이트
+                    updateProgress((pageNo - 1) / Math.max(totalPage, 1) * 100);
+                    
+                    const url = `https://opendart.fss.or.kr/api/list.json?crtfc_key=${API_KEY}&bgn_de=${startDate}&end_de=${endDate}&corp_cls=${corpClass}&page_no=${pageNo}&page_count=${pageCount}`;
+                    
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    
+                    if (data.status === '000') {
+                        if (pageNo === 1) {
+                            totalPage = data.total_page;
+                            showStatus(`📊 총 ${data.total_count}건의 데이터를 ${totalPage}페이지에서 다운로드합니다.`, 'info');
+                        }
+                        
+                        if (data.list && data.list.length > 0) {
+                            allData = allData.concat(data.list);
+                            showStatus(`📥 ${pageNo}/${totalPage} 페이지 다운로드 완료 (${allData.length}건)`, 'success');
+                        }
+                        
+                        pageNo++;
+                    } else {
+                        throw new Error(`API 오류: ${data.message} (코드: ${data.status})`);
+                    }
+                    
+                    // API 호출 간격 조절 (서버 부하 방지)
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    
+                } while (pageNo <= totalPage);
+                
+                downloadedData = allData;
+                showProgress(false);
+                showStatus(`✅ 다운로드 완료! 총 ${allData.length}건의 데이터를 가져왔습니다.`, 'success');
+                displayResults(allData);
+                
+                // 다운로드 버튼 활성화
+                document.getElementById('csvBtn').disabled = false;
+                document.getElementById('jsonBtn').disabled = false;
+                
+            } catch (error) {
+                showProgress(false);
+                showStatus(`❌ 오류 발생: ${error.message}`, 'error');
+            }
+        }
+        
+        // 결과 표시
+        function displayResults(data) {
+            const container = document.getElementById('resultContainer');
+            const info = document.getElementById('resultInfo');
+            const tbody = document.getElementById('resultTableBody');
+            
+            info.innerHTML = `
+                <p><strong>총 ${data.length}건</strong>의 데이터를 다운로드했습니다.</p>
+                <p>법인구분별: ${getCorpClassSummary(data)}</p>
+            `;
+            
+            tbody.innerHTML = '';
+            data.slice(0, 50).forEach(item => { // 처음 50건만 표시
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${getCorpClassText(item.corp_cls)}</td>
+                    <td>${item.corp_name || '-'}</td>
+                    <td>${item.corp_code || '-'}</td>
+                    <td>${item.stock_code || '-'}</td>
+                    <td>${item.report_nm || '-'}</td>
+                    <td>${formatDate(item.rcept_dt)}</td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            if (data.length > 50) {
+                const moreRow = document.createElement('tr');
+                moreRow.innerHTML = `<td colspan="6" style="text-align: center; color: #666;">... 외 ${data.length - 50}건 더</td>`;
+                tbody.appendChild(moreRow);
+            }
+            
+            container.style.display = 'block';
+        }
+        
+        // 법인구분 요약
+        function getCorpClassSummary(data) {
+            const summary = {};
+            data.forEach(item => {
+                const cls = item.corp_cls || '기타';
+                summary[cls] = (summary[cls] || 0) + 1;
+            });
+            
+            return Object.entries(summary)
+                .map(([cls, count]) => `${getCorpClassText(cls)}: ${count}건`)
+                .join(', ');
+        }
+        
+        // 법인구분 텍스트 변환
+        function getCorpClassText(cls) {
+            const map = {
+                'Y': '유가증권',
+                'K': '코스닥',
+                'N': '코넥스',
+                'E': '기타'
+            };
+            return map[cls] || cls;
+        }
+        
+        // 날짜 포맷팅
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            return `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`;
+        }
+        
+        // CSV 다운로드
+        function downloadAsCSV() {
+            if (downloadedData.length === 0) {
+                showStatus('❌ 다운로드된 데이터가 없습니다.', 'error');
+                return;
+            }
+            
+            const headers = ['법인구분', '회사명', '고유번호', '종목코드', '보고서명', '접수번호', '접수일자'];
+            const csvContent = [
+                headers.join(','),
+                ...downloadedData.map(item => [
+                    getCorpClassText(item.corp_cls),
+                    `"${item.corp_name || ''}"`,
+                    item.corp_code || '',
+                    item.stock_code || '',
+                    `"${item.report_nm || ''}"`,
+                    item.rcept_no || '',
+                    formatDate(item.rcept_dt)
+                ].join(','))
+            ].join('\n');
+            
+            downloadFile(csvContent, 'company_codes.csv', 'text/csv');
+            showStatus('✅ CSV 파일이 다운로드되었습니다.', 'success');
+        }
+        
+        // JSON 다운로드
+        function downloadAsJSON() {
+            if (downloadedData.length === 0) {
+                showStatus('❌ 다운로드된 데이터가 없습니다.', 'error');
+                return;
+            }
+            
+            const jsonContent = JSON.stringify(downloadedData, null, 2);
+            downloadFile(jsonContent, 'company_codes.json', 'application/json');
+            showStatus('✅ JSON 파일이 다운로드되었습니다.', 'success');
+        }
+        
+        // 파일 다운로드 헬퍼 함수
+        function downloadFile(content, filename, contentType) {
+            const blob = new Blob([content], { type: contentType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        // 상태 메시지 표시
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+        }
+        
+        // 진행률 표시
+        function showProgress(show) {
+            document.getElementById('progressBar').style.display = show ? 'block' : 'none';
+        }
+        
+        // 진행률 업데이트
+        function updateProgress(percent) {
+            document.getElementById('progressBarFill').style.width = `${percent}%`;
+        }
+    </script>
+</body>
+</html> 

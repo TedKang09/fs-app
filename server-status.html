@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>서버 상태 확인</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success { background: #d4edda; color: #155724; }vm
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 서버 상태 확인</h1>
+    
+    <button onclick="checkPythonServer()">🐍 Python 서버 (포트 8000)</button>
+    <button onclick="checkProxyServer()">🔧 프록시 서버 (포트 3000)</button>
+    <button onclick="testApi()">🧪 API 테스트</button>
+    
+    <div id="result" class="status info">결과가 여기에 표시됩니다...</div>
+
+    <script>
+        async function checkPythonServer() {
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.className = 'status info';
+            resultDiv.textContent = '🐍 Python 서버 확인 중...';
+            
+            try {
+                const response = await fetch('http://localhost:8000/');
+                
+                if (response.ok) {
+                    resultDiv.className = 'status success';
+                    resultDiv.textContent = `
+✅ Python 서버가 정상 작동 중입니다!
+
+📋 서버 정보:
+- URL: http://localhost:8000
+- 상태: ${response.status}
+- 상태 텍스트: ${response.statusText}
+
+💡 사용 가능한 페이지들:
+- 메인 페이지: http://localhost:8000
+- API 테스트: http://localhost:8000/api-test.html
+- 빠른 테스트: http://localhost:8000/quick-test.html
+- 회사코드 다운로더: http://localhost:8000/company-downloader.html
+                    `;
+                } else {
+                    resultDiv.className = 'status error';
+                    resultDiv.textContent = `
+❌ Python 서버 응답 오류!
+
+상태: ${response.status}
+상태 텍스트: ${response.statusText}
+                    `;
+                }
+                
+            } catch (error) {
+                resultDiv.className = 'status error';
+                resultDiv.textContent = `
+❌ Python 서버에 연결할 수 없습니다!
+
+오류: ${error.message}
+
+💡 해결 방법:
+1. Python 서버 시작: python -m http.server 8000
+2. 포트 8000이 사용 가능한지 확인
+                `;
+            }
+        }
+        
+        async function checkProxyServer() {
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.className = 'status info';
+            resultDiv.textContent = '🔧 프록시 서버 확인 중...';
+            
+            try {
+                const response = await fetch('http://localhost:3000/');
+                
+                if (response.ok) {
+                    resultDiv.className = 'status success';
+                    resultDiv.textContent = `
+✅ 프록시 서버가 정상 작동 중입니다!
+
+📋 서버 정보:
+- URL: http://localhost:3000
+- 상태: ${response.status}
+- 상태 텍스트: ${response.statusText}
+
+💡 사용 가능한 페이지들:
+- 프록시 테스트: http://localhost:3000/proxy-test.html
+- API 프록시: http://localhost:3000/api/
+
+💡 CORS 문제 해결됨!
+                    `;
+                } else {
+                    resultDiv.className = 'status error';
+                    resultDiv.textContent = `
+❌ 프록시 서버 응답 오류!
+
+상태: ${response.status}
+상태 텍스트: ${response.statusText}
+                    `;
+                }
+                
+            } catch (error) {
+                resultDiv.className = 'status error';
+                resultDiv.textContent = `
+❌ 프록시 서버에 연결할 수 없습니다!
+
+오류: ${error.message}
+
+💡 해결 방법:
+1. 프록시 서버 시작: node proxy-server.js
+2. Node.js가 설치되어 있는지 확인
+3. 포트 3000이 사용 가능한지 확인
+                `;
+            }
+        }
+        
+        async function testApi() {
+            const resultDiv = document.getElementById('result');
+            const API_KEY = '447fcb4de167afbabb21ed7ded674931a89ad0b3';
+            
+            resultDiv.className = 'status info';
+            resultDiv.textContent = '🧪 API 테스트 중...';
+            
+            try {
+                // 프록시 서버를 통한 API 호출
+                const proxyUrl = `http://localhost:3000/api/list.json?crtfc_key=${API_KEY}&bgn_de=20240101&end_de=20240101&page_no=1&page_count=3`;
+                
+                resultDiv.textContent += `\n📡 프록시 URL: ${proxyUrl}`;
+                
+                const response = await fetch(proxyUrl);
+                const data = await response.json();
+                
+                if (data.status === '000') {
+                    resultDiv.className = 'status success';
+                    resultDiv.textContent = `
+✅ API 호출 성공!
+
+📊 응답 정보:
+- 상태: ${data.status}
+- 총 건수: ${data.total_count || 0}
+- 데이터 개수: ${data.list ? data.list.length : 0}
+
+📋 첫 번째 데이터:
+${data.list && data.list.length > 0 ? JSON.stringify(data.list[0], null, 2) : '데이터가 없습니다.'}
+
+🎉 CORS 문제가 해결되었습니다!
+                    `;
+                } else {
+                    resultDiv.className = 'status error';
+                    resultDiv.textContent = `
+❌ API 오류: ${data.status}
+메시지: ${data.message || '알 수 없는 오류'}
+                    `;
+                }
+                
+            } catch (error) {
+                resultDiv.className = 'status error';
+                resultDiv.textContent = `
+❌ API 호출 실패!
+
+오류: ${error.message}
+
+💡 해결 방법:
+1. 프록시 서버가 실행 중인지 확인
+2. 브라우저에서 http://localhost:3000/proxy-test.html 접속
+                `;
+            }
+        }
+        
+        // 페이지 로드 시 자동으로 서버 상태 확인
+        window.addEventListener('load', () => {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = 'status info';
+            resultDiv.textContent = `
+🔄 서버 상태 확인 페이지 로드 완료!
+
+💡 확인할 서버들:
+1. 🐍 Python 서버 (포트 8000) - 정적 파일 서빙
+2. 🔧 프록시 서버 (포트 3000) - CORS 문제 해결
+3. 🧪 API 테스트 - 실제 API 호출 확인
+
+⚠️ 참고: 두 서버 모두 실행 중이어야 합니다.
+            `;
+        });
+    </script>
+</body>
+</html> 
