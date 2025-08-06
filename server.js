@@ -9,15 +9,15 @@ import fetch from 'node-fetch';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// 환경변수 로드 (간단한 방식)
-let GEMINI_API_KEY = 'your_api_key_here';
+// 환경변수 로드 (Render.com 환경 변수 우선)
+let GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'your_api_key_here';
 try {
     // fs는 이미 import되어 있음
     const configPath = './config.env';
     if (fs.existsSync(configPath)) {
         const configContent = fs.readFileSync(configPath, 'utf8');
         const apiKeyMatch = configContent.match(/GEMINI_API_KEY=(.+)/);
-        if (apiKeyMatch) {
+        if (apiKeyMatch && !process.env.GEMINI_API_KEY) {
             GEMINI_API_KEY = apiKeyMatch[1].trim();
         }
     }
