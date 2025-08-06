@@ -367,6 +367,85 @@
             margin-bottom: 15px;
             text-align: center;
         }
+
+        /* 재무상태표 박스 차트 스타일 */
+        .balance-sheet-container {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            align-items: flex-start;
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .balance-sheet-box {
+            flex: 1;
+            max-width: 300px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            position: relative;
+        }
+
+        .balance-sheet-box.assets {
+            border-color: #4CAF50;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+        }
+
+        .balance-sheet-box.liabilities-equity {
+            border-color: #2196F3;
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            color: white;
+        }
+
+        .balance-sheet-title {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        .balance-sheet-item {
+            margin: 10px 0;
+            padding: 8px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .balance-sheet-item-label {
+            font-weight: 500;
+        }
+
+        .balance-sheet-item-value {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .balance-sheet-total {
+            margin-top: 15px;
+            padding: 10px;
+            border-top: 2px solid rgba(255, 255, 255, 0.3);
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .balance-sheet-equals {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            font-weight: bold;
+            color: #333;
+            margin: 0 20px;
+        }
     </style>
 </head>
 <body>
@@ -472,6 +551,30 @@
                 <div class="section-title">🤖 AI 재무제표 분석</div>
                 <div id="aiAnalysisResult" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); line-height: 1.6;">
                     <!-- AI 분석 결과가 여기에 표시됩니다 -->
+                </div>
+            </div>
+
+            <!-- 재무상태표 박스 차트 -->
+            <div id="balanceSheetSection" style="display: none; margin-top: 20px;">
+                <div class="section-title">📊 재무상태표 (자산 = 부채 + 자본)</div>
+                <div class="balance-sheet-container">
+                    <div class="balance-sheet-box assets">
+                        <div class="balance-sheet-title">자산</div>
+                        <div id="assetsItems">
+                            <!-- 동적으로 생성됨 -->
+                        </div>
+                        <div class="balance-sheet-total" id="totalAssets">총자산: -</div>
+                    </div>
+                    
+                    <div class="balance-sheet-equals">=</div>
+                    
+                    <div class="balance-sheet-box liabilities-equity">
+                        <div class="balance-sheet-title">부채 + 자본</div>
+                        <div id="liabilitiesEquityItems">
+                            <!-- 동적으로 생성됨 -->
+                        </div>
+                        <div class="balance-sheet-total" id="totalLiabilitiesEquity">부채+자본: -</div>
+                    </div>
                 </div>
             </div>
 
@@ -1146,6 +1249,9 @@
             // 테이블 표시
             displayFinancialTable(processedData);
 
+            // 재무상태표 박스 차트 표시
+            displayBalanceSheet(processedData);
+
             // 섹션들 표시 (가로 배치 강제 적용)
             const financialMetrics = document.getElementById('financialMetrics');
             const additionalMetrics = document.getElementById('additionalMetrics');
@@ -1163,6 +1269,7 @@
             additionalMetrics.style.gap = '15px';
             
             document.getElementById('financialTableSection').style.display = 'block'; // 테이블 섹션 표시
+            document.getElementById('balanceSheetSection').style.display = 'block'; // 재무상태표 박스 차트 표시
             document.getElementById('chartsSection').style.display = 'block';
             
             console.log('✅ 재무 데이터 표시 완료');
@@ -1548,6 +1655,89 @@
             `;
             
             tableBody.appendChild(row);
+        }
+
+        // 재무상태표 박스 차트 표시
+        function displayBalanceSheet(data) {
+            const assetsItems = document.getElementById('assetsItems');
+            const liabilitiesEquityItems = document.getElementById('liabilitiesEquityItems');
+            const totalAssets = document.getElementById('totalAssets');
+            const totalLiabilitiesEquity = document.getElementById('totalLiabilitiesEquity');
+            
+            // 기존 내용 초기화
+            assetsItems.innerHTML = '';
+            liabilitiesEquityItems.innerHTML = '';
+            
+            // 자산 항목들 추가
+            if (data.currentAssets > 0) {
+                addBalanceSheetItem(assetsItems, '유동자산', data.currentAssets);
+            }
+            if (data.nonCurrentAssets > 0) {
+                addBalanceSheetItem(assetsItems, '비유동자산', data.nonCurrentAssets);
+            }
+            if (data.totalAssets > 0) {
+                totalAssets.textContent = `총자산: ${formatCurrency(data.totalAssets)}`;
+            }
+            
+            // 부채 항목들 추가
+            if (data.totalLiabilities > 0) {
+                addBalanceSheetItem(liabilitiesEquityItems, '총부채', data.totalLiabilities);
+            }
+            
+            // 자본 항목들 추가
+            if (data.totalEquity > 0) {
+                addBalanceSheetItem(liabilitiesEquityItems, '자본총계', data.totalEquity);
+            }
+            
+            // 부채+자본 합계
+            const totalLiabilitiesAndEquity = (data.totalLiabilities || 0) + (data.totalEquity || 0);
+            if (totalLiabilitiesAndEquity > 0) {
+                totalLiabilitiesEquity.textContent = `부채+자본: ${formatCurrency(totalLiabilitiesAndEquity)}`;
+            }
+            
+            // 박스 높이 조절 (금액에 비례)
+            adjustBoxHeights(data);
+        }
+
+        // 재무상태표 항목 추가
+        function addBalanceSheetItem(container, label, amount) {
+            const item = document.createElement('div');
+            item.className = 'balance-sheet-item';
+            item.innerHTML = `
+                <span class="balance-sheet-item-label">${label}</span>
+                <span class="balance-sheet-item-value">${formatCurrency(amount)}</span>
+            `;
+            container.appendChild(item);
+        }
+
+        // 박스 높이 조절 (금액에 비례)
+        function adjustBoxHeights(data) {
+            const assetsBox = document.querySelector('.balance-sheet-box.assets');
+            const liabilitiesEquityBox = document.querySelector('.balance-sheet-box.liabilities-equity');
+            
+            // 최대 금액 찾기
+            const maxAmount = Math.max(
+                data.totalAssets || 0,
+                data.totalLiabilities || 0,
+                data.totalEquity || 0,
+                (data.totalLiabilities || 0) + (data.totalEquity || 0)
+            );
+            
+            if (maxAmount > 0) {
+                // 기본 높이 설정 (최소 200px, 최대 400px)
+                const baseHeight = 200;
+                const maxHeight = 400;
+                const heightRatio = Math.min(maxAmount / 100000000000000, 1); // 100조원을 최대값으로 설정
+                const dynamicHeight = baseHeight + (heightRatio * (maxHeight - baseHeight));
+                
+                // 박스 높이 설정
+                if (assetsBox) {
+                    assetsBox.style.minHeight = `${dynamicHeight}px`;
+                }
+                if (liabilitiesEquityBox) {
+                    liabilitiesEquityBox.style.minHeight = `${dynamicHeight}px`;
+                }
+            }
         }
 
         // AI 재무제표 분석
