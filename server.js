@@ -331,15 +331,45 @@ console.log('   - 범용 API: /api/list.json?crtfc_key=YOUR_KEY&bgn_de=20240101&
 console.log('   - Dart 프록시: /dart-proxy?crtfc_key=YOUR_KEY&bgn_de=20240101&end_de=20240101');
 console.log('   - AI 분석: POST /analyze-financials');
 
-// 재무제표 분석 함수 (로컬 분석 우선)
+// 재무제표 분석 함수 (Gemini API 우선, 실패 시 로컬 분석)
 async function analyzeFinancialData(financialData) {
     try {
-        console.log('로컬 재무제표 분석을 시작합니다.');
-        return generateLocalAnalysis(financialData);
-        
+        if (!GEMINI_API_KEY || GEMINI_API_KEY === 'your_api_key_here') {
+            console.log('Gemini API 키가 설정되어 있지 않습니다. 로컬 분석을 사용합니다.');
+            return generateLocalAnalysis(financialData);
+        }
+        // Gemini API 호출
+        const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{
+                            text: `아래의 재무제표 데이터를 분석해줘:\n${JSON.stringify(financialData)}`
+                        }]
+                    }]
+                })
+            }
+        );
+        const result = await response.json();
+        if (
+            result &&
+            result.candidates &&
+            result.candidates[0] &&
+            result.candidates[0].content &&
+            result.candidates[0].content.parts &&
+            result.candidates[0].content.parts[0].text
+        ) {
+            return result.candidates[0].content.parts[0].text;
+        } else {
+            console.log('Gemini API 응답이 올바르지 않습니다. 로컬 분석을 사용합니다.');
+            return generateLocalAnalysis(financialData);
+        }
     } catch (error) {
-        console.error('재무제표 분석 오류:', error);
-        throw new Error('재무제표 분석 중 오류가 발생했습니다: ' + error.message);
+        console.error('Gemini API 호출 오류:', error);
+        return generateLocalAnalysis(financialData);
     }
 }
 
