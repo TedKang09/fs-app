@@ -559,21 +559,18 @@
                 <div class="section-title">📊 재무상태표 (자산 = 부채 + 자본)</div>
                 <div class="balance-sheet-container">
                     <div class="balance-sheet-box assets">
-                        <div class="balance-sheet-title">자산</div>
-                        <div id="assetsItems">
-                            <!-- 동적으로 생성됨 -->
-                        </div>
-                        <div class="balance-sheet-total" id="totalAssets">총자산: -</div>
+                        <div class="balance-sheet-title">총자산</div>
+                        <div class="balance-sheet-total" id="totalAssets">-</div>
                     </div>
-                    
-                    <div class="balance-sheet-equals">=</div>
-                    
-                    <div class="balance-sheet-box liabilities-equity">
-                        <div class="balance-sheet-title">부채 + 자본</div>
-                        <div id="liabilitiesEquityItems">
-                            <!-- 동적으로 생성됨 -->
+                    <div style="display: flex; flex-direction: column; gap: 20px; flex: 1; max-width: 300px;">
+                        <div class="balance-sheet-box liabilities-equity" style="margin-bottom: 0;">
+                            <div class="balance-sheet-title">총부채</div>
+                            <div class="balance-sheet-total" id="totalLiabilities">-</div>
                         </div>
-                        <div class="balance-sheet-total" id="totalLiabilitiesEquity">부채+자본: -</div>
+                        <div class="balance-sheet-box equity" style="margin-top: 0;">
+                            <div class="balance-sheet-title">자본총계</div>
+                            <div class="balance-sheet-total" id="totalEquity">-</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1659,84 +1656,36 @@
 
         // 재무상태표 박스 차트 표시
         function displayBalanceSheet(data) {
-            const assetsItems = document.getElementById('assetsItems');
-            const liabilitiesEquityItems = document.getElementById('liabilitiesEquityItems');
             const totalAssets = document.getElementById('totalAssets');
-            const totalLiabilitiesEquity = document.getElementById('totalLiabilitiesEquity');
-            
-            // 기존 내용 초기화
-            assetsItems.innerHTML = '';
-            liabilitiesEquityItems.innerHTML = '';
-            
-            // 자산 항목들 추가
-            if (data.currentAssets > 0) {
-                addBalanceSheetItem(assetsItems, '유동자산', data.currentAssets);
-            }
-            if (data.nonCurrentAssets > 0) {
-                addBalanceSheetItem(assetsItems, '비유동자산', data.nonCurrentAssets);
-            }
-            if (data.totalAssets > 0) {
-                totalAssets.textContent = `총자산: ${formatCurrency(data.totalAssets)}`;
-            }
-            
-            // 부채 항목들 추가
-            if (data.totalLiabilities > 0) {
-                addBalanceSheetItem(liabilitiesEquityItems, '총부채', data.totalLiabilities);
-            }
-            
-            // 자본 항목들 추가
-            if (data.totalEquity > 0) {
-                addBalanceSheetItem(liabilitiesEquityItems, '자본총계', data.totalEquity);
-            }
-            
-            // 부채+자본 합계
-            const totalLiabilitiesAndEquity = (data.totalLiabilities || 0) + (data.totalEquity || 0);
-            if (totalLiabilitiesAndEquity > 0) {
-                totalLiabilitiesEquity.textContent = `부채+자본: ${formatCurrency(totalLiabilitiesAndEquity)}`;
-            }
-            
-            // 박스 높이 조절 (금액에 비례)
+            const totalLiabilities = document.getElementById('totalLiabilities');
+            const totalEquity = document.getElementById('totalEquity');
+            // 값 표시
+            totalAssets.textContent = data.totalAssets > 0 ? formatCurrency(data.totalAssets) : '-';
+            totalLiabilities.textContent = data.totalLiabilities > 0 ? formatCurrency(data.totalLiabilities) : '-';
+            totalEquity.textContent = data.totalEquity > 0 ? formatCurrency(data.totalEquity) : '-';
+            // 박스 높이 조절
             adjustBoxHeights(data);
-        }
-
-        // 재무상태표 항목 추가
-        function addBalanceSheetItem(container, label, amount) {
-            const item = document.createElement('div');
-            item.className = 'balance-sheet-item';
-            item.innerHTML = `
-                <span class="balance-sheet-item-label">${label}</span>
-                <span class="balance-sheet-item-value">${formatCurrency(amount)}</span>
-            `;
-            container.appendChild(item);
         }
 
         // 박스 높이 조절 (금액에 비례)
         function adjustBoxHeights(data) {
             const assetsBox = document.querySelector('.balance-sheet-box.assets');
-            const liabilitiesEquityBox = document.querySelector('.balance-sheet-box.liabilities-equity');
-            
+            const liabilitiesBox = document.querySelector('.balance-sheet-box.liabilities-equity');
+            const equityBox = document.querySelector('.balance-sheet-box.equity');
             // 최대 금액 찾기
             const maxAmount = Math.max(
                 data.totalAssets || 0,
                 data.totalLiabilities || 0,
-                data.totalEquity || 0,
-                (data.totalLiabilities || 0) + (data.totalEquity || 0)
+                data.totalEquity || 0
             );
-            
             if (maxAmount > 0) {
-                // 기본 높이 설정 (최소 200px, 최대 400px)
                 const baseHeight = 200;
                 const maxHeight = 400;
-                const heightRatio = Math.min(maxAmount / 100000000000000, 1); // 100조원을 최대값으로 설정
+                const heightRatio = Math.min(maxAmount / 100000000000000, 1); // 100조원 기준
                 const dynamicHeight = baseHeight + (heightRatio * (maxHeight - baseHeight));
-                
-                // 박스 높이 설정
-                if (assetsBox) {
-                    assetsBox.style.minHeight = `${dynamicHeight}px`;
-                }
-                if (liabilitiesEquityBox) {
-                    liabilitiesEquityBox.style.minHeight = `${dynamicHeight}px`;
-                }
+                if (assetsBox) assetsBox.style.minHeight = `${dynamicHeight}px`;
+                if (liabilitiesBox) liabilitiesBox.style.minHeight = `${dynamicHeight/2}px`;
+                if (equityBox) equityBox.style.minHeight = `${dynamicHeight/2}px`;
             }
         }
 
